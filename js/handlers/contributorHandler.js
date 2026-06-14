@@ -41,14 +41,15 @@ function renderCategories(categories) {
             var isVerified = e.user && e.user.verified;
             var verifiedBadge = isVerified ? '<img src="/assets/icons/verified.svg" style="width:14px;height:14px;vertical-align:middle;display:inline-block">' : '';
             var role = e.user && e.user.role ? e.user.role : '';
-            var roleBadge = role ? getRoleBadge(role) : '';
+            var hasOwnerRole = e.user && ((Array.isArray(e.user.memberRoles) && e.user.memberRoles.some(function(r) { return r && r.name && r.name.charAt(0) === '@'; })) || e.user.hasOwnerRole);
+            var roleBadge = hasOwnerRole ? getRoleBadge('owner') : (role ? getRoleBadge(role) : '');
             var avatarSize = 56;
             var avatar = e.user && e.user.avatar
               ? '<img src="' + e.user.avatar + '" alt="" style="width:' + avatarSize + 'px;height:' + avatarSize + 'px;border-radius:50%;object-fit:cover;flex-shrink:0;margin:0 auto 8px" onerror="try{this.outerHTML=\'<div style=&quot;width:' + avatarSize + 'px;height:' + avatarSize + 'px;border-radius:50%;background:var(--color-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;flex-shrink:0;margin:0 auto 8px&quot;>' + name.charAt(0).toUpperCase() + '</div>\'}catch(ex){}">'
               : '<div style="width:' + avatarSize + 'px;height:' + avatarSize + 'px;border-radius:50%;background:var(--color-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;flex-shrink:0;margin:0 auto 8px">' + name.charAt(0).toUpperCase() + '</div>';
             var desc = e.description ? '<div style="font-size:0.8rem;color:var(--text-secondary);margin-top:6px;line-height:1.4">' + escapeHtml(e.description) + '</div>' : '';
             var userId = e.user ? e.user._id : '';
-            return '<div class="contributor-entry" style="text-align:center;padding:16px 12px;border:1px solid var(--border-color);border-radius:var(--radius-md);background:var(--bg-glass);cursor:pointer" data-user-id="' + escapeHtml(userId) + '" data-user-name="' + escapeHtml(name) + '" data-user-username="' + escapeHtml(e.user ? e.user.username : '') + '" data-user-avatar="' + escapeHtml(e.user ? e.user.avatar : '') + '" data-user-role="' + escapeHtml(e.user ? e.user.role : '') + '" data-user-verified="' + (e.user && e.user.verified ? '1' : '0') + '" data-desc="' + escapeHtml(e.description || '') + '">' + avatar + '<div style="font-weight:700;font-size:0.9rem;display:flex;align-items:center;justify-content:center;gap:4px"><span>' + escapeHtml(name) + '</span>' + verifiedBadge + '</div><div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">' + username + '</div>' + roleBadge + desc + '</div>';
+            return '<div class="contributor-entry" style="text-align:center;padding:16px 12px;border:1px solid var(--border-color);border-radius:var(--radius-md);background:var(--bg-glass);cursor:pointer" data-user-id="' + escapeHtml(userId) + '" data-user-name="' + escapeHtml(name) + '" data-user-username="' + escapeHtml(e.user ? e.user.username : '') + '" data-user-avatar="' + escapeHtml(e.user ? e.user.avatar : '') + '" data-user-role="' + escapeHtml(e.user ? e.user.role : '') + '" data-user-owner="' + (hasOwnerRole ? '1' : '0') + '" data-user-verified="' + (e.user && e.user.verified ? '1' : '0') + '" data-desc="' + escapeHtml(e.description || '') + '">' + avatar + '<div style="font-weight:700;font-size:0.9rem;display:flex;align-items:center;justify-content:center;gap:4px"><span>' + escapeHtml(name) + '</span>' + verifiedBadge + '</div><div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">' + username + '</div>' + roleBadge + desc + '</div>';
           }).join('') + '</div>'
         : '<div style="width:100%;text-align:center;padding:20px 0;color:var(--text-muted);font-size:0.85rem" data-i18n="contributors_no_members">No members</div>';
       var iconHtml = cat.icon
@@ -97,6 +98,7 @@ function renderCategories(categories) {
         this.dataset.userUsername,
         this.dataset.userAvatar,
         this.dataset.userRole,
+        this.dataset.userOwner === '1',
         this.dataset.userVerified === '1',
         this.dataset.desc
       );
@@ -104,7 +106,7 @@ function renderCategories(categories) {
   });
 }
 
-function openContributorProfile(userId, name, username, avatar, role, verified, description) {
+function openContributorProfile(userId, name, username, avatar, role, isOwner, verified, description) {
   var existing = document.getElementById('contributor-profile-modal');
   if (existing) existing.remove();
 
@@ -115,7 +117,7 @@ function openContributorProfile(userId, name, username, avatar, role, verified, 
 
   var tickHtml = verified ? '<img src="/assets/icons/verified.svg" style="width:16px;height:16px;vertical-align:middle;display:inline-block">' : '';
 
-  var roleBadge = role ? getRoleBadge(role) : '';
+  var roleBadge = isOwner ? getRoleBadge('owner') : (role ? getRoleBadge(role) : '');
   var usernameHtml = username ? '<div style="font-size:0.8rem;color:var(--text-muted);margin-top:2px">@' + escapeHtml(username) + '</div>' : '';
   var descHtml = description ? '<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border-color);font-size:0.9rem;line-height:1.6;color:var(--text-secondary)">' + escapeHtml(description) + '</div>' : '';
 
@@ -165,9 +167,10 @@ function renderEntryRow(userId, name, avatar, desc) {
 }
 
 function getRoleBadge(role) {
-  var label = role.charAt(0).toUpperCase() + role.slice(1);
+  var label = role === 'owner' ? 'Owner' : role.charAt(0).toUpperCase() + role.slice(1);
   var cls = role === 'developer' ? 'developer' : role === 'admin' ? 'admin' : role === 'moderator' ? 'moderator' : role === 'owner' ? 'owner' : '';
-  return '<span class="dashboard-role-badge ' + cls + '" style="display:inline-flex;margin-top:6px;font-size:0.7rem">' + label + '</span>';
+  var prefix = role === 'owner' ? '<svg viewBox="0 0 24 24" style="width:12px;height:12px;vertical-align:middle;display:inline-block;fill:currentColor;margin-right:3px"><path d="M2 19h20v3H2v-3zM3.3 5.5L8 13l4-7 4 7 4.7-7.5L22 16H2l1.3-10.5z"/></svg>' : '';
+  return '<span class="dashboard-role-badge ' + cls + '" style="display:inline-flex;align-items:center;margin-top:6px;font-size:0.7rem">' + prefix + label + '</span>';
 }
 
 function openAddModal() {
