@@ -1298,7 +1298,7 @@ async function handleMemberAction(btn) {
     if (!targetId) return;
     if (!confirm('Set "' + userName + '" as the Owner?')) return;
     await addMemberRoleServer(targetId, '@' + userName, '');
-    postAuditLog({ category: 'staff', type: 'member_role_add', actionType: 'set-owner', message: 'Set ' + userName + ' as Owner', targetType: 'user', targetId: id, targetName: userName });
+    postAuditLog({ category: 'staff', type: 'member_role_add', actionType: 'set-owner', message: 'Set ' + userName + ' as Owner', targetType: 'user', targetId: targetId, targetName: userName });
     showSavedText(document.querySelector('.dash-card-title:last-child'), 'Owner set to ' + userName);
     await loadMembers();
     window.dispatchEvent(new CustomEvent('identityChanged'));
@@ -1313,7 +1313,7 @@ async function handleMemberAction(btn) {
     var ownerRole = getMemberRolesForUser(currentOwnerId).find(function(r) { return r.name && r.name.charAt(0) === '@'; });
     if (ownerRole) await removeMemberRole(currentOwnerId, ownerRole.name);
     await addMemberRoleServer(targetId, '@' + userName, '');
-    postAuditLog({ category: 'staff', type: 'owner_transfer', actionType: 'transfer-owner', message: 'Transferred ownership to ' + userName, targetType: 'user', targetId: id, targetName: userName });
+    postAuditLog({ category: 'staff', type: 'owner_transfer', actionType: 'transfer-owner', message: 'Transferred ownership to ' + userName, targetType: 'user', targetId: targetId, targetName: userName });
     showSavedText(document.querySelector('.dash-card-title:last-child'), 'Owner changed to ' + userName);
     await loadMembers();
     window.dispatchEvent(new CustomEvent('identityChanged'));
@@ -1334,7 +1334,7 @@ async function handleMemberAction(btn) {
     })
     .then(function(res) {
       if (!res.ok) throw new Error('Failed to change role');
-      postAuditLog({ category: 'staff', type: action, actionType: action, message: action.replace('-', ' ') + ' for ' + userName, targetType: 'user', targetId: id, targetName: userName });
+      postAuditLog({ category: 'staff', type: action, actionType: action, message: action.replace('-', ' ') + ' for ' + userName, targetType: 'user', targetId: userId, targetName: userName });
       showSavedText(document.querySelector('.dash-card-title:last-child'), 'Role updated for ' + userName);
       loadMembers();
     })
@@ -1351,7 +1351,7 @@ async function handleMemberAction(btn) {
     fetch(API_BASE_URL + '/admin/users/' + userId, { method: 'DELETE', credentials: 'include' })
       .then(function(res) {
         if (!res.ok) throw new Error('Delete failed');
-        postAuditLog({ category: 'staff', type: 'delete-account', actionType: 'delete-account', message: 'Deleted ' + userName, targetType: 'user', targetId: id, targetName: userName });
+        postAuditLog({ category: 'staff', type: 'delete-account', actionType: 'delete-account', message: 'Deleted ' + userName, targetType: 'user', targetId: userId, targetName: userName });
         showSavedText(document.querySelector('.dash-card-title:last-child'), 'Deleted ' + userName);
         loadMembers();
       })
@@ -1404,7 +1404,7 @@ async function handleMemberAction(btn) {
       .catch(function() { showSavedText(document.querySelector('.dash-card-title:last-child'), 'Remove suspend failed'); });
     return;
   }
-  postAuditLog({ category: 'staff', type: action, actionType: action, message: action + ' ' + userName, targetType: 'user', targetId: id, targetName: userName });
+  postAuditLog({ category: 'staff', type: action, actionType: action, message: action + ' ' + userName, targetType: 'user', targetId: btn.dataset.userId || '', targetName: userName });
   var actionsContainer = document.getElementById('dash-actions-list');
   if (actionsContainer) setupActions();
   showSavedText(document.querySelector('.dash-card-title:last-child'), action + ' recorded');

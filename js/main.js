@@ -9,7 +9,6 @@ import { initSupportHandler } from './handlers/supportHandler.js';
 import { initAnimationHandler } from './handlers/animationHandler.js';
 import { initProfileHandler } from './handlers/profileHandler.js';
 import { initDevHandler } from './handlers/devHandler.js';
-import { initDashboardPage } from './handlers/dashboardPage.js';
 import { initPostJobHandler } from './handlers/postJobHandler.js';
 import { initNotificationHandler } from './handlers/notificationHandler.js';
 import { initContributorHandler } from './handlers/contributorHandler.js';
@@ -29,11 +28,15 @@ document.addEventListener('DOMContentLoaded', () => {
   initAnimationHandler();
   initProfileHandler();
   initDevHandler();
-  initDashboardPage().catch(() => {});
   initPostJobHandler();
   initNotificationHandler();
   initContributorHandler();
   initNewsTickerHandler();
+  if (window.location.pathname.match(/\/dashboard(\/|$|\.html)/)) {
+    import('./handlers/dashboardPage.js').then(function(mod) {
+      return mod.initDashboardPage();
+    }).catch(function() {});
+  }
   setupNavUI();
   setupScrollTopBtn();
   restoreScroll();
