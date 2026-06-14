@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import ContributorCategory from '../models/ContributorCategory.js';
 import User from '../models/User.js';
+import MemberRole from '../models/MemberRole.js';
+import { normalizeMemberRoles, memberDocHasOwner } from '../utils/memberRoleUtils.js';
 import auth from '../middleware/auth.js';
 
 var router = Router();
@@ -30,8 +32,24 @@ router.get('/contributors/categories', async (req, res) => {
     });
     if (userIds.size > 0) {
       var users = await User.find({ _id: { $in: Array.from(userIds) } }).select('name username avatar role verified').lean();
+      var memberRoles = await MemberRole.find({ userId: { $in: Array.from(userIds) } }).lean();
+      var memberRoleMap = {};
+      memberRoles.forEach(function(doc) {
+        memberRoleMap[doc.userId.toString()] = {
+          roles: normalizeMemberRoles(doc),
+          hasOwner: memberDocHasOwner(doc)
+        };
+      });
       var userMap = {};
-      users.forEach(function(u) { userMap[u._id.toString()] = u; });
+      users.forEach(function(u) {
+        var userId = u._id.toString();
+        var roleData = memberRoleMap[userId] || { roles: [], hasOwner: false };
+        userMap[userId] = Object.assign({}, u, {
+          memberRoles: roleData.roles,
+          hasOwnerRole: roleData.hasOwner,
+          owner: roleData.hasOwner
+        });
+      });
       categories.forEach(function(c) {
         (c.entries || []).forEach(function(e) {
           if (e.userId) e.user = userMap[e.userId.toString()] || null;
