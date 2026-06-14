@@ -6,6 +6,7 @@ import CustomRole from '../models/CustomRole.js';
 import { memberDocHasOwner, normalizeMemberRoles } from '../utils/memberRoleUtils.js';
 import auth from '../middleware/auth.js';
 import { createNotification } from './notifications.js';
+import { createAuditLog, actorSnapshot } from '../utils/auditLog.js';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync, mkdirSync } from 'fs';
@@ -84,6 +85,7 @@ router.post('/claim-dev', auth, async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+    await createAuditLog({ category: 'staff', type: 'claim_dev', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Claimed developer role', targetType: 'user', targetId: String(user._id), targetName: user.username || user.name });
 
     res.json({ user });
   } catch (err) {
@@ -131,6 +133,7 @@ router.put('/admin/users/:id/role', auth, requireAdmin, async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
     const adminRank = req.user.role === 'developer' ? 'Developer' : 'Admin';
     await createNotification({ userId: user._id, type: 'role_change', message: `${adminRank} ${req.user.username} changed your role to ${role}`, link: '/dashboard' });
+    await createAuditLog({ category: 'staff', type: 'user_role_change', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: `Changed role to ${role}`, targetType: 'user', targetId: String(user._id), targetName: user.username || user.name, details: role });
     res.json({ user });
   } catch {
     res.status(500).json({ message: 'Server error' });
@@ -144,6 +147,7 @@ router.delete('/admin/users/:id', auth, requireAdmin, getRequesterRank, async (r
     const targetRank = await getUserRank(target._id);
     if (targetRank >= req.requesterRank) return res.status(403).json({ message: 'Cannot delete a user with equal or higher rank' });
     await User.findByIdAndDelete(req.params.id);
+    await createAuditLog({ category: 'staff', type: 'user_delete', actionType: 'delete-account', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Deleted user', targetType: 'user', targetId: String(target._id), targetName: target.username || target.name });
     res.json({ message: 'User deleted' });
   } catch {
     res.status(500).json({ message: 'Server error' });
@@ -170,6 +174,7 @@ router.post('/admin/ban/:id', auth, requireModerator, getRequesterRank, async (r
     }
     const adminRank = req.user.role === 'developer' ? 'Developer' : 'Admin';
     await createNotification({ userId: target._id, type: 'ban', message: `${adminRank} ${req.user.username} banned your account` });
+    await createAuditLog({ category: 'staff', type: 'user_ban', actionType: 'ban', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Banned user', targetType: 'user', targetId: String(target._id), targetName: target.username || target.name, details: req.body.reason || '' });
     res.json({ user: target });
   } catch {
     res.status(500).json({ message: 'Server error' });
@@ -188,6 +193,7 @@ router.post('/admin/unban/:id', auth, requireModerator, getRequesterRank, async 
     }
     const adminRank = req.user.role === 'developer' ? 'Developer' : 'Admin';
     await createNotification({ userId: target._id, type: 'unban', message: `${adminRank} ${req.user.username} unbanned your account` });
+    await createAuditLog({ category: 'staff', type: 'user_unban', actionType: 'unban', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Unbanned user', targetType: 'user', targetId: String(target._id), targetName: target.username || target.name });
     res.json({ user: target });
   } catch {
     res.status(500).json({ message: 'Server error' });
@@ -207,6 +213,7 @@ router.post('/admin/timeout/:id', auth, requireModerator, getRequesterRank, asyn
     await target.save();
     const adminRank = req.user.role === 'developer' ? 'Developer' : 'Admin';
     await createNotification({ userId: target._id, type: 'timeout', message: `${adminRank} ${req.user.username} suspended your account for ${parseInt(minutes) || 60} minutes` });
+    await createAuditLog({ category: 'staff', type: 'user_timeout', actionType: 'suspend', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Suspended user', targetType: 'user', targetId: String(target._id), targetName: target.username || target.name, details: `${parseInt(minutes) || 60} min` });
     res.json({ user: target });
   } catch {
     res.status(500).json({ message: 'Server error' });
@@ -222,6 +229,7 @@ router.post('/admin/untimeout/:id', auth, requireModerator, getRequesterRank, as
     target.timedOutUntil = null; target.timeoutReason = ''; await target.save();
     const adminRank = req.user.role === 'developer' ? 'Developer' : 'Admin';
     await createNotification({ userId: target._id, type: 'untimeout', message: `${adminRank} ${req.user.username} lifted your suspension` });
+    await createAuditLog({ category: 'staff', type: 'user_untimeout', actionType: 'untimeout', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Removed user suspension', targetType: 'user', targetId: String(target._id), targetName: target.username || target.name });
     res.json({ user: target });
   } catch {
     res.status(500).json({ message: 'Server error' });
@@ -238,6 +246,7 @@ router.put('/admin/users/:id/verify', auth, requireAdmin, async (req, res) => {
     const type = user.verified ? 'verified' : 'unverified';
     const msg = user.verified ? `${adminRank} ${req.user.username} verified your account` : `${adminRank} ${req.user.username} unverified your account`;
     await createNotification({ userId: user._id, type, message: msg, link: '/dashboard' });
+    await createAuditLog({ category: 'staff', type: 'user_verify', actionType: 'verify', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: user.verified ? 'Verified user' : 'Unverified user', targetType: 'user', targetId: String(user._id), targetName: user.username || user.name });
     res.json({ user });
   } catch {
     res.status(500).json({ message: 'Server error' });

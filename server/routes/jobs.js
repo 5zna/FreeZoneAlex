@@ -5,6 +5,7 @@ import { createNotification } from './notifications.js';
 import { containsProfanity } from '../utils/profanityFilter.js';
 import MemberRole from '../models/MemberRole.js';
 import { memberDocHasOwner } from '../utils/memberRoleUtils.js';
+import { createAuditLog, actorSnapshot } from '../utils/auditLog.js';
 
 function isAdmin(req) {
   return req.user && (req.user.role === 'admin' || req.user.role === 'developer');
@@ -87,6 +88,7 @@ router.post('/jobs', auth, async (req, res) => {
       source: isMemberSource ? 'member' : 'company',
       status: isMemberSource ? 'pending' : 'approved'
     });
+    await createAuditLog({ category: 'activity', type: 'job_create', actionType: 'content', actorId: req.userId, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Created job', targetType: 'job', targetId: String(job._id), targetName: job.title_en || job.title_ar || '', details: source || 'company' });
     if (isMemberSource) {
       try {
         const User = (await import('../models/User.js')).default;
@@ -145,6 +147,7 @@ router.put('/jobs/:id', auth, async (req, res) => {
       } catch {}
     }
     await job.save();
+    await createAuditLog({ category: 'activity', type: 'job_update', actionType: 'content', actorId: req.userId, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Updated job', targetType: 'job', targetId: String(job._id), targetName: job.title_en || job.title_ar || '' });
     res.json({ job });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -160,6 +163,7 @@ router.patch('/jobs/:id/hiring', auth, async (req, res) => {
     }
     job.hiring = !job.hiring;
     await job.save();
+    await createAuditLog({ category: 'activity', type: 'job_hiring_toggle', actionType: 'content', actorId: req.userId, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Toggled hiring status', targetType: 'job', targetId: String(job._id), targetName: job.title_en || job.title_ar || '' });
     res.json({ job });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -184,6 +188,7 @@ router.post('/jobs/:id/bump', auth, async (req, res) => {
     }
     job.bumpedAt = new Date();
     await job.save();
+    await createAuditLog({ category: 'activity', type: 'job_bump', actionType: 'content', actorId: req.userId, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Bumped job', targetType: 'job', targetId: String(job._id), targetName: job.title_en || job.title_ar || '' });
     res.json({ job });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -194,6 +199,7 @@ router.get('/jobs/pending-count', auth, async (req, res) => {
   try {
     if (!(await isStaff(req))) return res.json({ count: 0 });
     const count = await Job.countDocuments({ source: 'member', status: 'pending' });
+    await createAuditLog({ category: 'activity', type: 'job_pending_count', actionType: 'content', actorId: req.userId, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Viewed pending job count' });
     res.json({ count });
   } catch { res.status(500).json({ message: 'Server error' }); }
 });
@@ -212,6 +218,7 @@ router.post('/jobs/:id/approve', auth, async (req, res) => {
       const title = job.title_ar || job.title_en || 'Job';
       await createNotification({ userId: job.postedBy, type: 'job_approved', message: `Your job "${title}" has been approved`, link: '/member-jobs' });
     }
+    await createAuditLog({ category: 'staff', type: 'job_approve', actionType: 'approve', actorId: req.userId, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Approved job', targetType: 'job', targetId: String(job._id), targetName: job.title_en || job.title_ar || '' });
     res.json({ job });
   } catch (err) {
     console.error('[APPROVE] Error:', err);
@@ -235,6 +242,7 @@ router.post('/jobs/:id/reject', auth, async (req, res) => {
       const title = job.title_ar || job.title_en || 'Job';
       await createNotification({ userId: job.postedBy, type: 'job_rejected', message: `Your job "${title}" has been rejected. Reason: ${reason}`, link: '/member-jobs' });
     }
+    await createAuditLog({ category: 'staff', type: 'job_reject', actionType: 'reject', actorId: req.userId, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Rejected job', targetType: 'job', targetId: String(job._id), targetName: job.title_en || job.title_ar || '', details: reason });
     res.json({ message: 'Deleted', reason });
   } catch (err) {
     console.error('[REJECT] Error:', err);
@@ -252,6 +260,7 @@ router.delete('/jobs/:id', auth, async (req, res) => {
       if (!isAllowed) return res.status(403).json({ message: 'Not authorized' });
     }
     await Job.findByIdAndDelete(req.params.id);
+    await createAuditLog({ category: 'staff', type: 'job_delete', actionType: 'delete', actorId: req.userId, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Deleted job', targetType: 'job', targetId: String(job._id), targetName: job.title_en || job.title_ar || '' });
     res.json({ message: 'Deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
