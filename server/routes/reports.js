@@ -2,6 +2,7 @@ import express from 'express';
 import Report from '../models/Report.js';
 import Reply from '../models/Reply.js';
 import MemberRole from '../models/MemberRole.js';
+import { memberDocHasOwner } from '../utils/memberRoleUtils.js';
 
 var router = express.Router();
 
@@ -10,8 +11,31 @@ async function isStaff(req) {
   if (req.user.role === 'developer' || req.user.role === 'admin' || req.user.role === 'moderator') return true;
   try {
     var mr = await MemberRole.findOne({ userId: req.user._id }).lean();
-    return mr && mr.roles && mr.roles.some(r => r.roleName && r.roleName.charAt(0) === '@');
+    return memberDocHasOwner(mr);
   } catch { return false; }
+}
+
+function isStaffRole(role) {
+  return ['developer', 'admin', 'moderator'].includes(role);
+}
+
+async function attachReplyStaffFlags(replies) {
+  var userIds = [];
+  for (var i = 0; i < replies.length; i++) {
+    var reply = replies[i];
+    var u = reply.userId;
+    if (u && u._id) userIds.push(String(u._id));
+  }
+  if (!userIds.length) return replies;
+
+  var memberRoles = await MemberRole.find({ userId: { $in: userIds } }).lean();
+  var memberRoleMap = new Map(memberRoles.map(function (doc) { return [String(doc.userId), doc]; }));
+
+  return replies.map(function (reply) {
+    var u = reply.userId || {};
+    var staff = isStaffRole(u.role) || memberDocHasOwner(memberRoleMap.get(String(u._id)));
+    return Object.assign({}, reply, { isStaffReply: staff });
+  });
 }
 
 function isOpener(report, userId) {
@@ -91,6 +115,7 @@ router.get('/reports/:id/replies', async (req, res) => {
     var allowed = isOpener(report, req.user._id) || (await isStaff(req));
     if (!allowed) return res.status(403).json({ message: 'Forbidden' });
     var replies = await Reply.find({ reportId: req.params.id }).sort({ createdAt: 1 }).populate('userId', 'name username avatar role').lean();
+    replies = await attachReplyStaffFlags(replies);
     return res.json({ replies });
   } catch (err) {
     return res.status(500).json({ message: 'Server error' });
@@ -108,6 +133,14 @@ router.post('/reports/:id/replies', async (req, res) => {
     if (!content || !content.trim()) return res.status(400).json({ message: 'Content is required' });
     var reply = await Reply.create({ reportId: req.params.id, userId: req.user._id, content: content.trim() });
     var populated = await Reply.findById(reply._id).populate('userId', 'name username avatar role').lean();
+    var staff = isStaffRole(populated?.userId?.role);
+    if (!staff) {
+      try {
+        var mr = await MemberRole.findOne({ userId: populated.userId._id }).lean();
+        staff = memberDocHasOwner(mr);
+      } catch {}
+    }
+    populated.isStaffReply = staff;
     return res.status(201).json({ reply: populated });
   } catch (err) {
     return res.status(500).json({ message: 'Server error' });
