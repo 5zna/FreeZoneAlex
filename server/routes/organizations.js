@@ -34,7 +34,7 @@ router.get('/organizations/public/:id', async (req, res) => {
 
 router.get('/organizations', auth, async (req, res) => {
   try {
-    const orgs = await Organization.find({}).populate('owner', 'name displayName email').populate('members', 'name displayName email');
+    const orgs = await Organization.find({}).populate('owner', 'name displayName username email').populate('members', 'name displayName username email');
     res.json({ organizations: orgs });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -180,7 +180,7 @@ router.post('/organizations/:id/members', auth, async (req, res) => {
     for (const memberId of added) {
       await createNotification({ userId: memberId, type: 'org_add', message: `You have been added to "${org.name}"`, link: '/dashboard' });
     }
-    await org.populate([{ path: 'owner', select: 'name displayName email' }, { path: 'members', select: 'name displayName email' }]);
+    await org.populate([{ path: 'owner', select: 'name displayName username email' }, { path: 'members', select: 'name displayName username email' }]);
     await createAuditLog({ category: 'staff', type: 'organization_member_add', actionType: 'organization', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Added organization member(s)', targetType: 'organization', targetId: String(org._id), targetName: org.name, details: added.length + ' member(s)' });
     res.json({ organization: org, added, errors });
   } catch (err) {
@@ -199,7 +199,7 @@ router.delete('/organizations/:id/members/:userId', auth, async (req, res) => {
     org.members = org.members.filter(m => m.toString() !== req.params.userId);
     await org.save();
     await createNotification({ userId: req.params.userId, type: 'org_remove', message: `You have been removed from "${org.name}"` });
-    const populated = await org.populate('owner', 'name displayName email');
+    const populated = await org.populate('owner', 'name displayName username email');
     await createAuditLog({ category: 'staff', type: 'organization_member_remove', actionType: 'organization', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Removed organization member', targetType: 'organization', targetId: String(org._id), targetName: org.name, details: req.params.userId });
     res.json({ organization: populated });
   } catch {
