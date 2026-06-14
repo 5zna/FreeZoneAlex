@@ -381,6 +381,19 @@ html[lang="ar"] .modal-title {
 }
 
 /* Post-job form details */
+#post-job-modal .modal-container {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-elevated) 96%, var(--color-primary) 4%) 0%, var(--bg-elevated) 100%);
+}
+
+#post-job-modal .modal-header {
+  background: color-mix(in srgb, var(--bg-secondary) 84%, var(--color-primary) 16%);
+}
+
+#post-job-modal .modal-body {
+  background: color-mix(in srgb, var(--bg-elevated) 96%, var(--color-primary) 4%);
+}
+
 .dash-field-group { 
   display:flex; 
   flex-direction:column; 
@@ -410,9 +423,23 @@ html[lang="ar"] .modal-title {
   box-sizing: border-box;
 }
 
+#post-job-modal .dash-field-input,
+#post-job-modal #post-tag-input {
+  min-height: 44px;
+  border-color: color-mix(in srgb, var(--border-color) 78%, var(--color-primary) 22%);
+  background: color-mix(in srgb, var(--bg-secondary) 82%, var(--color-primary) 18%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
 .dash-field-input:focus { 
   border-color: var(--color-primary); 
   background: var(--bg-secondary);
+}
+
+#post-job-modal .dash-field-input:focus,
+#post-job-modal #post-tag-input:focus {
+  background: color-mix(in srgb, var(--bg-secondary) 70%, var(--color-primary) 30%);
+  box-shadow: var(--ring-focus), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .dash-field-input::placeholder { 
@@ -479,7 +506,9 @@ select.dash-field-input {
   justify-content: center; 
   gap: 0; 
   padding: 20px 24px 0; 
-  background: var(--bg-secondary); 
+  background: color-mix(in srgb, var(--bg-secondary) 88%, var(--color-primary) 12%); 
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .post-step { 
@@ -509,7 +538,7 @@ select.dash-field-input {
 }
 
 .post-step:not(.active) .post-step-num { 
-  background: var(--border-color); 
+  background: color-mix(in srgb, var(--bg-elevated) 74%, var(--text-muted) 26%); 
   color: var(--text-muted); 
 }
 
@@ -523,7 +552,7 @@ select.dash-field-input {
 .post-step-connector { 
   width: 40px; 
   height: 2px; 
-  background: var(--border-color); 
+  background: color-mix(in srgb, var(--border-color) 78%, var(--color-primary) 22%); 
   margin: 0 8px; 
   flex-shrink: 0; 
 }
