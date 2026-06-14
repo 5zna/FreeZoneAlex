@@ -236,8 +236,8 @@ export let currentUserHasAnyRole = false;
 
 function getAvatarUrl(avatar) {
   if (!avatar) return null;
-  if (avatar.startsWith('http://') || avatar.startsWith('https://')) return avatar;
-  return `${BACKEND_ORIGIN}${avatar}`;
+  if (avatar.startsWith('http://') || avatar.startsWith('https://') || avatar.startsWith('data:')) return avatar;
+  return avatar.startsWith('/') ? `${BACKEND_ORIGIN}${avatar}` : `${BACKEND_ORIGIN}/${avatar}`;
 }
 
 async function fetchUser() {
