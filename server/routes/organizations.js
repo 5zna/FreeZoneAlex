@@ -5,6 +5,7 @@ import User from '../models/User.js';
 import auth from '../middleware/auth.js';
 import { createNotification } from './notifications.js';
 import { containsProfanity } from '../utils/profanityFilter.js';
+import { createAuditLog, actorSnapshot } from '../utils/auditLog.js';
 
 const router = Router();
 
@@ -78,6 +79,7 @@ router.post('/organizations', auth, async (req, res) => {
     }
     const org = await Organization.create(orgData);
     const populated = await org.populate('owner', 'name displayName email');
+    await createAuditLog({ category: 'staff', type: 'organization_create', actionType: 'organization', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Created organization', targetType: 'organization', targetId: String(populated._id), targetName: populated.name });
     res.status(201).json({ organization: populated });
   } catch {
     res.status(500).json({ message: 'Server error' });
@@ -127,6 +129,7 @@ router.put('/organizations/:id', auth, async (req, res) => {
     }
     await org.save();
     const populated = await org.populate('owner', 'name displayName email');
+    await createAuditLog({ category: 'staff', type: 'organization_update', actionType: 'organization', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Updated organization', targetType: 'organization', targetId: String(populated._id), targetName: populated.name });
     res.json({ organization: populated });
   } catch {
     res.status(500).json({ message: 'Server error' });
@@ -141,6 +144,7 @@ router.delete('/organizations/:id', auth, async (req, res) => {
       return res.status(403).json({ message: 'Only the owner or an admin can delete' });
     }
     await org.deleteOne();
+    await createAuditLog({ category: 'staff', type: 'organization_delete', actionType: 'organization', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Deleted organization', targetType: 'organization', targetId: String(org._id), targetName: org.name });
     res.json({ message: 'Deleted' });
   } catch {
     res.status(500).json({ message: 'Server error' });
@@ -177,6 +181,7 @@ router.post('/organizations/:id/members', auth, async (req, res) => {
       await createNotification({ userId: memberId, type: 'org_add', message: `You have been added to "${org.name}"`, link: '/dashboard' });
     }
     await org.populate([{ path: 'owner', select: 'name displayName email' }, { path: 'members', select: 'name displayName email' }]);
+    await createAuditLog({ category: 'staff', type: 'organization_member_add', actionType: 'organization', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Added organization member(s)', targetType: 'organization', targetId: String(org._id), targetName: org.name, details: added.length + ' member(s)' });
     res.json({ organization: org, added, errors });
   } catch (err) {
     console.error('[addMember] Error:', err);
@@ -195,6 +200,7 @@ router.delete('/organizations/:id/members/:userId', auth, async (req, res) => {
     await org.save();
     await createNotification({ userId: req.params.userId, type: 'org_remove', message: `You have been removed from "${org.name}"` });
     const populated = await org.populate('owner', 'name displayName email');
+    await createAuditLog({ category: 'staff', type: 'organization_member_remove', actionType: 'organization', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Removed organization member', targetType: 'organization', targetId: String(org._id), targetName: org.name, details: req.params.userId });
     res.json({ organization: populated });
   } catch {
     res.status(500).json({ message: 'Server error' });

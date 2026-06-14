@@ -7,6 +7,7 @@ import {
   ensureRolesArray,
   findOwnerMemberRole
 } from '../utils/memberRoleUtils.js';
+import { createAuditLog, actorSnapshot } from '../utils/auditLog.js';
 
 const router = Router();
 
@@ -56,6 +57,7 @@ router.put('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
       }
       doc.roles.push({ roleName, roleIcon: roleIcon || '' });
       await doc.save();
+      await createAuditLog({ category: 'staff', type: 'member_role_add', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Added member role', targetType: 'member-role', targetId: String(req.params.userId), details: roleName });
       return res.json({ roles: normalizeMemberRoles(doc) });
     }
 
@@ -63,6 +65,7 @@ router.put('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
       userId: req.params.userId,
       roles: [{ roleName, roleIcon: roleIcon || '' }]
     });
+    await createAuditLog({ category: 'staff', type: 'member_role_add', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Added member role', targetType: 'member-role', targetId: String(req.params.userId), details: roleName });
     res.json({ roles: normalizeMemberRoles(doc) });
   } catch {
     res.status(500).json({ message: 'Server error' });
@@ -96,6 +99,7 @@ router.delete('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
         return res.status(403).json({ message: 'Only developer or the Owner themselves can remove Owner role' });
       }
       await doc.deleteOne();
+      await createAuditLog({ category: 'staff', type: 'member_role_clear', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Removed all member roles', targetType: 'member-role', targetId: String(req.params.userId) });
       return res.json({ roles: [] });
     }
 
@@ -109,9 +113,11 @@ router.delete('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
     doc.roles = doc.roles.filter(r => r.roleName !== roleName);
     if (doc.roles.length === 0) {
       await doc.deleteOne();
+      await createAuditLog({ category: 'staff', type: 'member_role_remove', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Removed member role', targetType: 'member-role', targetId: String(req.params.userId), details: roleName });
       return res.json({ roles: [] });
     }
     await doc.save();
+    await createAuditLog({ category: 'staff', type: 'member_role_remove', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Removed member role', targetType: 'member-role', targetId: String(req.params.userId), details: roleName });
     res.json({ roles: normalizeMemberRoles(doc) });
   } catch {
     res.status(500).json({ message: 'Server error' });

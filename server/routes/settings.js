@@ -4,6 +4,7 @@ import MemberRole from '../models/MemberRole.js';
 import CustomRole from '../models/CustomRole.js';
 import { memberDocHasOwner, normalizeMemberRoles } from '../utils/memberRoleUtils.js';
 import auth from '../middleware/auth.js';
+import { createAuditLog, actorSnapshot } from '../utils/auditLog.js';
 
 const router = Router();
 
@@ -86,6 +87,16 @@ router.put('/settings', auth, async (req, res) => {
     update.updatedBy = req.userId;
     var s = await SiteSettings.findOneAndUpdate({ key: 'global' }, { $set: update }, { upsert: true, new: true }).lean();
     clearSettingsCache();
+    await createAuditLog({
+      category: 'staff',
+      type: 'settings_update',
+      actionType: newsOnly ? 'news' : 'settings',
+      actorId: req.user._id,
+      actorName: actorSnapshot(req.user).actorName,
+      actorRole: req.user.role,
+      message: newsOnly ? 'Updated news ticker' : 'Updated site settings',
+      details: Object.keys(update).join(', ')
+    });
     res.json({ settings: publicSettings(s) });
   } catch {
     res.status(500).json({ message: 'Server error' });

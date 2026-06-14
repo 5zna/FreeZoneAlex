@@ -3,6 +3,7 @@ import User from '../models/User.js';
 import auth from '../middleware/auth.js';
 import { uploadAvatar } from '../middleware/upload.js';
 import { containsProfanity } from '../utils/profanityFilter.js';
+import { createAuditLog, actorSnapshot } from '../utils/auditLog.js';
 
 const router = Router();
 
@@ -10,6 +11,7 @@ router.get('/profile', auth, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
+    await createAuditLog({ category: 'activity', type: 'profile_view', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Viewed profile', targetType: 'profile', targetId: String(req.userId) });
     res.json({ user });
   } catch {
     res.status(500).json({ message: 'Server error' });
@@ -47,6 +49,7 @@ router.put('/profile', auth, async (req, res) => {
 
     const user = await User.findByIdAndUpdate(req.userId, update, { new: true });
     if (!user) return res.status(404).json({ message: 'User not found' });
+    await createAuditLog({ category: 'activity', type: 'profile_update', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Updated profile', details: Object.keys(update).join(', '), targetType: 'profile', targetId: String(req.userId), targetName: user.displayName || user.name });
     res.json({ user });
   } catch (err) {
     if (err.code === 11000) {
@@ -68,6 +71,7 @@ router.post('/profile/avatar', auth, (req, res) => {
     try {
       const avatarUrl = `/uploads/${req.file.filename}`;
       const user = await User.findByIdAndUpdate(req.userId, { avatar: avatarUrl }, { new: true });
+      await createAuditLog({ category: 'activity', type: 'profile_avatar', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Changed profile avatar', targetType: 'profile', targetId: String(req.userId), targetName: user?.displayName || user?.name || '' });
       res.json({ user });
     } catch {
       res.status(500).json({ message: 'Server error' });

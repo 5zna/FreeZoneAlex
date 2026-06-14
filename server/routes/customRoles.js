@@ -3,6 +3,7 @@ import auth from '../middleware/auth.js';
 import CustomRole from '../models/CustomRole.js';
 import MemberRole from '../models/MemberRole.js';
 import { memberDocHasOwner } from '../utils/memberRoleUtils.js';
+import { createAuditLog, actorSnapshot } from '../utils/auditLog.js';
 
 const router = Router();
 
@@ -32,6 +33,7 @@ router.post('/custom-roles', auth, requireAdmin, async (req, res) => {
     const { name, icon, permissions } = req.body;
     if (!name) return res.status(400).json({ message: 'name is required' });
     const role = await CustomRole.create({ name, icon: icon || '', permissions: permissions || {} });
+    await createAuditLog({ category: 'staff', type: 'custom_role_create', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Created custom role', targetType: 'custom-role', targetId: String(role._id), targetName: role.name });
     res.status(201).json({ role });
   } catch (err) {
     if (err.code === 11000) return res.status(409).json({ message: 'Role already exists' });
@@ -47,6 +49,7 @@ router.put('/custom-roles/:id', auth, requireAdmin, async (req, res) => {
     if (permissions) update.permissions = permissions;
     const role = await CustomRole.findByIdAndUpdate(req.params.id, update, { new: true });
     if (!role) return res.status(404).json({ message: 'Role not found' });
+    await createAuditLog({ category: 'staff', type: 'custom_role_update', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Updated custom role', targetType: 'custom-role', targetId: String(role._id), targetName: role.name });
     res.json({ role });
   } catch (err) {
     if (err.code === 11000) return res.status(409).json({ message: 'Role name already exists' });
@@ -59,6 +62,7 @@ router.delete('/custom-roles/:id', auth, requireAdmin, async (req, res) => {
   try {
     const role = await CustomRole.findByIdAndDelete(req.params.id);
     if (!role) return res.status(404).json({ message: 'Role not found' });
+    await createAuditLog({ category: 'staff', type: 'custom_role_delete', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Deleted custom role', targetType: 'custom-role', targetId: String(role._id), targetName: role.name });
     res.json({ message: 'Deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
