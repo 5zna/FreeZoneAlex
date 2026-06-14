@@ -87,6 +87,18 @@ function buildUserSelect(container, users, selectedId, onChange) {
 
 function loadCachedUsers() { try { return JSON.parse(localStorage.getItem('dashCachedUsers') || '[]'); } catch { return []; } }
 
+function getUserDisplayName(user) {
+  if (!user) return '';
+  const baseName = user.displayName || user.name || '';
+  if (user.username) return baseName ? `${baseName} (@${user.username})` : `@${user.username}`;
+  return baseName || user.email || 'Unknown';
+}
+
+function getUserSecondaryLabel(user) {
+  if (!user) return '';
+  return user.username ? `@${user.username}` : (user.email || '');
+}
+
 function renderMemberSelectChips(containerId, select) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -98,7 +110,7 @@ function renderMemberSelectChips(containerId, select) {
     return;
   }
   container.innerHTML = selectedUsers.map(u => {
-    const name = u.displayName || u.name || u.email || '';
+    const name = getUserDisplayName(u);
     const av = u.avatar;
     const avUrl = av ? (av.startsWith('http') || av.startsWith('data:') ? av : BACKEND_ORIGIN + av) : null;
     const img = avUrl ? '<img src="' + avUrl + '" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--bg-glass)">' : '<div class="user-select-avatar-placeholder" style="width:20px;height:20px;font-size:0.65rem">' + name.charAt(0).toUpperCase() + '</div>';
@@ -1435,7 +1447,12 @@ async function loadMembers() {
 
   const render = () => {
     const q = searchInput ? searchInput.value.toLowerCase() : '';
-    const filtered = q ? users.filter(u => (u.displayName || u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q)) : users;
+    const filtered = q ? users.filter(u => {
+      const primary = (u.displayName || u.name || '').toLowerCase();
+      const username = (u.username || '').toLowerCase();
+      const email = (u.email || '').toLowerCase();
+      return primary.includes(q) || username.includes(q) || email.includes(q);
+    }) : users;
 
     if (filtered.length === 0) {
       tbody.innerHTML = '';
@@ -1484,13 +1501,14 @@ async function loadMembers() {
         if (!_oid) actionsHtml += '<button data-action="set-owner" data-user-id="' + u._id + '" data-user-name="' + name + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="#fbbf24" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> ' + t('dash_member_set_owner') + '</button>';
       }
 
+      const secondaryLabel = getUserSecondaryLabel(u);
       return `<tr>
-        <td><div class="dashboard-user-cell"><div class="dashboard-user-avatar">${avatarHtml}</div><div class="dashboard-user-info"><div class="dashboard-user-name">${name}${userHasOwnerRole(u._id) ? ' ' + OWNER_CROWN_GLOBAL : isVerified ? ' ' + VERIFIED_TICK : ''}${statusBadges.length ? ' ' + statusBadges.join(' ') : ''}</div><div class="dashboard-user-email">${u.email || ''}</div></div></div></td>
+        <td><div class="dashboard-user-cell"><div class="dashboard-user-avatar">${avatarHtml}</div><div class="dashboard-user-info"><div class="dashboard-user-name">${name}${userHasOwnerRole(u._id) ? ' ' + OWNER_CROWN_GLOBAL : isVerified ? ' ' + VERIFIED_TICK : ''}${statusBadges.length ? ' ' + statusBadges.join(' ') : ''}</div><div class="dashboard-user-email">${secondaryLabel}</div></div></div></td>
         <td>${buildRoleCell(u._id, u.role, name)}</td>
         <td>${new Date(u.createdAt).toLocaleDateString()}</td>
         <td><span class="dash-members-lastseen">${lastSeen ? new Date(lastSeen).toLocaleDateString() : '-'}</span></td>
         <td>
-          <button class="dash-eye-btn dash-view-profile" data-user='${JSON.stringify({ id: u._id, name, email: u.email, role: u.role, avatar: u.avatar, username: u.username, displayName: u.displayName, about: u.about, banned: u.banned, timedOutUntil: u.timedOutUntil, verified: u.verified })}' data-actions='${encodeURIComponent(actionsHtml)}' title="${t('dash_member_view_profile')}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          <button class="dash-eye-btn dash-view-profile" data-user='${JSON.stringify({ id: u._id, name, secondaryLabel, role: u.role, avatar: u.avatar, username: u.username, displayName: u.displayName, about: u.about, banned: u.banned, timedOutUntil: u.timedOutUntil, verified: u.verified })}' data-actions='${encodeURIComponent(actionsHtml)}' title="${t('dash_member_view_profile')}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
           ${actionsHtml ? `
           <div class="dash-member-actions-wrap">
             <button class="dash-member-actions-btn" title="${t('common_actions')}">&#x2026;</button>
@@ -2049,7 +2067,7 @@ async function setupOrganizations(initialOrgs) {
         const id = (typeof m === 'object' ? m._id : m) || '';
         const users = loadCachedUsers();
         const found = users.find(u => u._id === id);
-        const displayName = found ? (found.displayName || found.name || found.email || id) : id;
+        const displayName = found ? getUserDisplayName(found) : id;
         const av = found ? found.avatar : null;
         const avUrl = av ? (av.startsWith('http') || av.startsWith('data:') ? av : BACKEND_ORIGIN + av) : null;
         const img = avUrl ? '<img src="' + avUrl + '" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--bg-glass);margin-left:6px">' : '<div class="user-select-avatar-placeholder" style="width:20px;height:20px;font-size:0.65rem;display:inline-flex;margin-left:6px">' + displayName.charAt(0).toUpperCase() + '</div>';
@@ -2081,7 +2099,7 @@ async function setupOrganizations(initialOrgs) {
       select.innerHTML = '<option disabled>No available users</option>';
       return;
     }
-    select.innerHTML = filtered.map(u => '<option value="' + u._id + '">' + (u.displayName || u.name || u.email) + ' (@' + (u.username || '') + ')</option>').join('');
+    select.innerHTML = filtered.map(u => '<option value="' + u._id + '">' + getUserDisplayName(u) + '</option>').join('');
     // show avatars for selected users
     renderMemberSelectChips('dash-org-member-chips', select);
     select.addEventListener('change', () => renderMemberSelectChips('dash-org-member-chips', select));
@@ -2145,6 +2163,7 @@ function openProfilePreview(btn) {
   var actionsRaw = btn.dataset.actions ? decodeURIComponent(btn.dataset.actions) : '';
   var avatarSrc = u.avatar || '';
   var displayName = u.displayName || u.name;
+  var secondaryLabel = u.secondaryLabel || (u.username ? '@' + u.username : (u.email || ''));
   var roleLabel = lang === 'ar'
     ? (u.role === 'admin' ? 'ادمن' : u.role === 'developer' ? 'مطور' : u.role === 'moderator' ? 'مشرف' : 'عضو')
     : (u.role === 'admin' ? 'Admin' : u.role === 'developer' ? 'Developer' : u.role === 'moderator' ? 'Moderator' : 'Member');
@@ -2158,9 +2177,8 @@ function openProfilePreview(btn) {
     + (avatarSrc ? '<img src="' + avatarSrc + '" style="width:100%;height:100%;object-fit:cover" onerror="this.remove()">' : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:var(--text-muted);font-weight:600">' + displayName.charAt(0).toUpperCase() + '</div>')
     + '</div>'
     + '<div style="font-size:1.1rem;font-weight:700;margin-bottom:4px">' + displayName + (tick ? ' ' + tick : '') + '</div>'
-    + '<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:4px">@' + (u.username || u.name) + '</div>'
+    + '<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:4px">' + secondaryLabel + '</div>'
     + '<span class="dashboard-role-badge ' + badgeClass + '" style="margin-top:4px;font-size:0.75rem">' + badgeLabel + '</span>'
-    + (u.email ? '<div style="font-size:0.8rem;color:var(--text-muted);margin-top:8px">' + u.email + '</div>' : '')
     + '<p style="margin-top:12px;color:var(--text-secondary);font-size:0.85rem;line-height:1.5">' + aboutText + '</p>'
     + '</div>';
   if (actionsRaw && actionsWrap && actionsPopup) {
