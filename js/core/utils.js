@@ -191,7 +191,7 @@ export function openReportDetailModal(report, currentUser, isOwner) {
     + '<div id="report-replies-list"><p style="color:var(--text-muted);font-size:0.85rem">' + (isAr ? 'جارٍ تحميل الردود...' : 'Loading replies...') + '</p></div>'
     + (canReply
       ? '<div style="margin-top:14px"><textarea id="report-reply-input" rows="3" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-primary);color:var(--text-primary);resize:vertical;font-size:0.85rem" placeholder="' + (isAr ? 'اكتب ردك...' : 'Write a reply...') + '"></textarea>'
-      + '<button id="report-reply-submit-btn" type="button" class="dash-action-btn" style="margin-top:8px;padding:8px 18px">' + (isAr ? 'إرسال' : 'Send') + '</button></div>'
+      + '<button id="report-reply-submit-btn" type="button" class="dash-btn dash-btn-sm" style="margin-top:10px;min-width:140px">' + (isAr ? 'إرسال' : 'Send') + '</button></div>'
       : '')
     + '</div>'
     + '</div></div>';
@@ -262,7 +262,10 @@ function appendReply(reply) {
   }
   var isAr = document.documentElement.getAttribute('lang') === 'ar';
   var u = reply.userId || {};
-  var isStaff = u.role && ['developer', 'admin', 'moderator'].includes(u.role);
+  var isSupportStaff = !!reply.isStaffReply || ['developer', 'admin', 'moderator'].includes(u.role);
+  if (isSupportStaff && isOwner && u.role !== 'developer' && u.role !== 'admin' && u.role !== 'moderator') {
+    isSupportStaff = true;
+  }
   var avatarUrl = u.avatar;
   if (avatarUrl && !avatarUrl.startsWith('http') && !avatarUrl.startsWith('data:')) {
     avatarUrl = BACKEND_ORIGIN + avatarUrl;
@@ -270,7 +273,7 @@ function appendReply(reply) {
   var avatarHtml = avatarUrl
     ? '<img src="' + avatarUrl.replace(/'/g, "\\'") + '" style="width:30px;height:30px;border-radius:50%;object-fit:cover">'
     : '<span style="display:inline-flex;width:30px;height:30px;border-radius:50%;background:var(--bg-glass);align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;flex-shrink:0">' + escapeHtml((u.name || '?').charAt(0).toUpperCase()) + '</span>';
-  var roleBadge = isStaff ? '<span class="dashboard-role-badge" style="font-size:0.65rem;padding:1px 6px;margin-inline-start:6px;background:var(--color-primary);color:#fff">' + (isAr ? 'فريق الدعم' : 'Staff') + '</span>' : '';
+  var roleBadge = isSupportStaff ? '<span class="dashboard-role-badge support" style="font-size:0.65rem;padding:1px 6px;margin-inline-start:6px;background:var(--badge-admin-bg);color:var(--badge-admin-text);border-color:rgba(37,99,235,0.15)">' + (isAr ? 'الدعم الفنى' : 'Technical Support') + '</span>' : '';
 
   var div = document.createElement('div');
   div.style.cssText = 'display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-color)';
