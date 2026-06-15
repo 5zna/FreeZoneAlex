@@ -25,6 +25,7 @@
   "author": "Community Developers",
   "license": "MIT",
   "dependencies": {
+    "cloudinary": "^2.10.0",
     "connect-mongo": "^5.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",
