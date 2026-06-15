@@ -8,6 +8,7 @@ import {
   findOwnerMemberRole
 } from '../utils/memberRoleUtils.js';
 import { createAuditLog, actorSnapshot } from '../utils/auditLog.js';
+import { uploadToCloudinary } from '../utils/cloudinary.js';
 
 const router = Router();
 
@@ -48,6 +49,17 @@ router.put('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
       }
     }
 
+    var finalIcon = roleIcon || '';
+    if (typeof finalIcon === 'string' && finalIcon.startsWith('data:')) {
+      var base64Data = finalIcon.split(',')[1];
+      var buffer = Buffer.from(base64Data, 'base64');
+      try {
+        finalIcon = await uploadToCloudinary(buffer, 'role_icons');
+      } catch {
+        finalIcon = roleIcon;
+      }
+    }
+
     let doc = await MemberRole.findOne({ userId: req.params.userId });
     if (doc) {
       await ensureRolesArray(doc);
@@ -55,7 +67,7 @@ router.put('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
       if (existing.some(r => r.name === roleName)) {
         return res.json({ roles: existing });
       }
-      doc.roles.push({ roleName, roleIcon: roleIcon || '' });
+      doc.roles.push({ roleName, roleIcon: finalIcon });
       await doc.save();
       await createAuditLog({ category: 'staff', type: 'member_role_add', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Added member role', targetType: 'member-role', targetId: String(req.params.userId), details: roleName });
       return res.json({ roles: normalizeMemberRoles(doc) });
@@ -63,7 +75,7 @@ router.put('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
 
     doc = await MemberRole.create({
       userId: req.params.userId,
-      roles: [{ roleName, roleIcon: roleIcon || '' }]
+      roles: [{ roleName, roleIcon: finalIcon }]
     });
     await createAuditLog({ category: 'staff', type: 'member_role_add', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Added member role', targetType: 'member-role', targetId: String(req.params.userId), details: roleName });
     res.json({ roles: normalizeMemberRoles(doc) });

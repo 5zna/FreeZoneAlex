@@ -8,6 +8,6 @@ var siteSettingsSchema = new mongoose.Schema({
   favicon: { type: String, default: '' },
   news: { type: [String], default: [] },
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
-}, { timestamps: true });
+}, { timestamps: true, toJSON: { transform: function(doc, ret) { if (ret.favicon && ret.favicon.startsWith('data:')) ret.favicon = ''; return ret; } }, toObject: { transform: function(doc, ret) { if (ret.favicon && ret.favicon.startsWith('data:')) ret.favicon = ''; return ret; } } });
 
 export default mongoose.model('SiteSettings', siteSettingsSchema);

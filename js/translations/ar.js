@@ -211,12 +211,6 @@ export const ar = {
   "contact_placeholder_phone": "رقم الهاتف",
   "contact_placeholder_email": "البريد الإلكتروني",
 
-  // Crop Tool
-  "crop_title": "اقتصاص الصورة",
-  "crop_subtitle": "اضبط منطقة الاقتصاص لصورتك الشخصية",
-  "crop_zoom": "تكبير",
-  "crop_size": "الحجم",
-
   // Q&A Desk (Inquiries)
   "qa_title": "مكتب الاستفسارات والأسئلة",
   "qa_subtitle": "احصل على معلومات دقيقة وموثوقة حول الشركات في الإسكندرية، خطوط المواصلات، متوسط الأجور وتجنب النصب.",

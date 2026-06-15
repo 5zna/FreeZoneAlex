@@ -68,12 +68,22 @@ router.post('/organizations', auth, async (req, res) => {
       if (existing) return res.status(400).json({ message: 'Username already taken' });
     }
     const ownerId = owner || req.userId;
+    var finalAvatar = avatar || '';
+    if (typeof finalAvatar === 'string' && finalAvatar.startsWith('data:')) {
+      var base64Data = finalAvatar.split(',')[1];
+      var buffer = Buffer.from(base64Data, 'base64');
+      try {
+        finalAvatar = await uploadToCloudinary(buffer, 'org_avatars');
+      } catch {
+        finalAvatar = avatar;
+      }
+    }
     const orgData = {
       name: name.trim(),
       owner: ownerId,
       members: [ownerId],
       about: about || '',
-      avatar: avatar || '',
+      avatar: finalAvatar,
       verified: !!verified,
       members: [ownerId]
     };

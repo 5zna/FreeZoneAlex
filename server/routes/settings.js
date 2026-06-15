@@ -5,6 +5,7 @@ import CustomRole from '../models/CustomRole.js';
 import { memberDocHasOwner, normalizeMemberRoles } from '../utils/memberRoleUtils.js';
 import auth from '../middleware/auth.js';
 import { createAuditLog, actorSnapshot } from '../utils/auditLog.js';
+import { uploadToCloudinary } from '../utils/cloudinary.js';
 
 const router = Router();
 
@@ -22,11 +23,13 @@ function normalizeNewsItems(items) {
 }
 
 function publicSettings(s) {
+  var favicon = s.favicon || '';
+  if (favicon.startsWith('data:')) favicon = '';
   return {
     maintenance: s.maintenance,
     maintenanceReason: s.maintenanceReason || '',
     alert: s.alert || '',
-    favicon: s.favicon || '',
+    favicon: favicon,
     news: normalizeNewsItems(s.news)
   };
 }
@@ -82,7 +85,19 @@ router.put('/settings', auth, async (req, res) => {
     if (typeof maintenance === 'boolean') update.maintenance = maintenance;
     if (typeof maintenanceReason === 'string') update.maintenanceReason = maintenanceReason;
     if (typeof alert === 'string') update.alert = alert;
-    if (typeof favicon === 'string') update.favicon = favicon;
+    if (typeof favicon === 'string') {
+      if (favicon.startsWith('data:')) {
+        var base64Data = favicon.split(',')[1];
+        var buffer = Buffer.from(base64Data, 'base64');
+        try {
+          update.favicon = await uploadToCloudinary(buffer, 'favicons');
+        } catch {
+          update.favicon = favicon;
+        }
+      } else {
+        update.favicon = favicon;
+      }
+    }
     if (Array.isArray(news)) update.news = normalizeNewsItems(news);
     update.updatedBy = req.userId;
     var s = await SiteSettings.findOneAndUpdate({ key: 'global' }, { $set: update }, { upsert: true, new: true }).lean();

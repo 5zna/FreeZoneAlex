@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import MemberRole from '../models/MemberRole.js';
 import { normalizeMemberRoles, memberDocHasOwner } from '../utils/memberRoleUtils.js';
 import auth from '../middleware/auth.js';
+import { uploadToCloudinary } from '../utils/cloudinary.js';
 
 var router = Router();
 
@@ -67,8 +68,18 @@ router.post('/contributors/categories', auth, async (req, res) => {
   try {
     var { name, icon, entries } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ message: 'Category name is required' });
+    var finalIcon = icon || '';
+    if (typeof finalIcon === 'string' && finalIcon.startsWith('data:')) {
+      var base64Data = finalIcon.split(',')[1];
+      var buffer = Buffer.from(base64Data, 'base64');
+      try {
+        finalIcon = await uploadToCloudinary(buffer, 'contributor_icons');
+      } catch {
+        finalIcon = icon;
+      }
+    }
     var count = await ContributorCategory.countDocuments();
-    var category = await ContributorCategory.create({ name: name.trim(), icon: icon || '', entries: entries || [], order: count });
+    var category = await ContributorCategory.create({ name: name.trim(), icon: finalIcon, entries: entries || [], order: count });
     return res.status(201).json(category);
   } catch (err) {
     return res.status(500).json({ message: err.message });
@@ -82,7 +93,19 @@ router.put('/contributors/categories/:id', auth, async (req, res) => {
     var category = await ContributorCategory.findById(req.params.id);
     if (!category) return res.status(404).json({ message: 'Category not found' });
     if (name !== undefined) category.name = name.trim();
-    if (icon !== undefined) category.icon = icon;
+    if (icon !== undefined) {
+      if (typeof icon === 'string' && icon.startsWith('data:')) {
+        var base64Data = icon.split(',')[1];
+        var buffer = Buffer.from(base64Data, 'base64');
+        try {
+          category.icon = await uploadToCloudinary(buffer, 'contributor_icons');
+        } catch {
+          category.icon = icon;
+        }
+      } else {
+        category.icon = icon;
+      }
+    }
     if (order !== undefined) category.order = order;
     if (entries !== undefined) {
       category.entries = entries.map(function(e) {

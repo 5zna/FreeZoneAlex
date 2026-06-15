@@ -6,6 +6,7 @@ import MemberRole from '../models/MemberRole.js';
 import { memberDocHasOwner } from '../utils/memberRoleUtils.js';
 import { createAuditLog, actorSnapshot } from '../utils/auditLog.js';
 import { createNotification } from './notifications.js';
+import { uploadToCloudinary } from '../utils/cloudinary.js';
 
 var router = express.Router();
 
@@ -67,6 +68,15 @@ router.post('/reports', async (req, res) => {
         var bytes = validateAttachmentSize(a.data);
         if (bytes <= 0) return res.status(400).json({ message: 'Attachment file is empty: ' + a.name });
         if (bytes > 8 * 1024 * 1024) return res.status(400).json({ message: 'Attachment exceeds 8MB limit: ' + a.name });
+        if (typeof a.data === 'string' && a.data.startsWith('data:')) {
+          var base64Data = a.data.split(',')[1];
+          var buffer = Buffer.from(base64Data, 'base64');
+          try {
+            a.data = await uploadToCloudinary(buffer, 'report_attachments');
+          } catch {
+            /* fallback: keep base64 */
+          }
+        }
       }
     }
     var report = await Report.create({ userId: req.user._id, type, title, content: content || '', attachments: attachments || [] });

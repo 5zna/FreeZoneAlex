@@ -133,7 +133,7 @@ export function openReportDetailModal(report, currentUser, isOwner) {
     attachmentsHtml = '<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color)"><strong>' + (isAr ? 'المرفقات' : 'Attachments') + '</strong><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">';
     report.attachments.forEach(function(a) {
       var mime = a.type || a.mimeType || '';
-      var isImage = mime.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(a.name) || (a.data && a.data.startsWith('data:image/'));
+      var isImage = mime.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(a.name);
       if (isImage) {
         attachmentsHtml += '<div style="border:1px solid var(--border-color);border-radius:var(--radius-sm);overflow:hidden;max-width:200px;cursor:pointer" onclick="openImageLightbox(\'' + a.data.replace(/'/g, "\\'") + '\',\'' + a.name.replace(/'/g, "\\'").replace(/"/g, '&quot;') + '\')">'
           + '<img src="' + a.data.replace(/'/g, "\\'") + '" alt="' + a.name.replace(/"/g, '&quot;') + '" style="width:100%;height:auto;display:block">'

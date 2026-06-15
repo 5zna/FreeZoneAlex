@@ -99,12 +99,6 @@ export const en = {
   "contact_placeholder_phone": "Phone Number",
   "contact_placeholder_email": "Email",
 
-  // Crop Tool
-  "crop_title": "Crop Image",
-  "crop_subtitle": "Adjust the crop area for your avatar",
-  "crop_zoom": "Zoom",
-  "crop_size": "Size",
-
   // Q&A Desk (Inquiries)
   "qa_title": "Inquiries Desk",
   "qa_subtitle": "Get accurate details about Alexandria companies, transportation routes, average salaries, and work safety.",

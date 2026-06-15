@@ -10,6 +10,6 @@ var contributorCategorySchema = new mongoose.Schema({
   icon: { type: String, default: '' },
   entries: [entrySchema],
   order: { type: Number, default: 0 }
-}, { timestamps: true });
+}, { timestamps: true, toJSON: { transform: function(doc, ret) { if (ret.icon && ret.icon.startsWith('data:')) ret.icon = ''; return ret; } }, toObject: { transform: function(doc, ret) { if (ret.icon && ret.icon.startsWith('data:')) ret.icon = ''; return ret; } } });
 
 export default mongoose.model('ContributorCategory', contributorCategorySchema);
