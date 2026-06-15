@@ -156,9 +156,15 @@ passport.serializeUser((user, done) => {
   done(null, user.id);
 });
 
+var userCache = new Map();
+var userCacheTTL = 15000;
+
 passport.deserializeUser(async (id, done) => {
   try {
-    const user = await User.findById(id);
+    var entry = userCache.get(id);
+    if (entry && Date.now() - entry.time < userCacheTTL) return done(null, entry.user);
+    const user = await User.findById(id, 'name displayName username email avatar role banned banReason timedOutUntil timeoutReason');
+    if (user) userCache.set(id, { user, time: Date.now() });
     done(null, user);
   } catch (err) {
     done(err, null);
