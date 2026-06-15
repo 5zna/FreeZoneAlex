@@ -4,7 +4,7 @@ const notificationSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   type: {
     type: String,
-    enum: ['ban', 'unban', 'timeout', 'untimeout', 'role_change', 'org_add', 'org_remove', 'job_approved', 'job_rejected', 'job_pending', 'verified', 'unverified'],
+    enum: ['ban', 'unban', 'timeout', 'untimeout', 'role_change', 'org_add', 'org_remove', 'job_approved', 'job_rejected', 'job_pending', 'verified', 'unverified', 'report_reply'],
     required: true
   },
   message: { type: String, required: true },
