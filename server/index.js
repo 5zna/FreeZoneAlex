@@ -28,6 +28,7 @@ import reportRoutes from './routes/reports.js';
 import auditLogRoutes from './routes/auditLogs.js';
 import { getSettings } from './routes/settings.js';
 import { startReportCleanup } from './utils/cleanup.js';
+import { cacheRemoteAvatar } from './utils/avatarCache.js';
 import MemberRole from './models/MemberRole.js';
 import { memberDocHasOwner, normalizeMemberRoles } from './utils/memberRoleUtils.js';
 import blockIP from './middleware/blockIP.js';
@@ -85,6 +86,7 @@ passport.use(new GoogleStrategy({
   passReqToCallback: true
 }, async (req, accessToken, refreshToken, profile, done) => {
   try {
+    const googleAvatar = await cacheRemoteAvatar(profile.photos?.[0]?.value || '', profile.id);
     if (req.session && req.session.linkGoogle) {
       const user = await User.findById(req.session.passport.user);
       if (!user) return done(null, false, { message: 'Not authenticated' });
@@ -93,7 +95,9 @@ passport.use(new GoogleStrategy({
         return done(null, false, { message: 'Google account already linked to another user' });
       }
       user.googleId = profile.id;
-      if (!user.avatar) user.avatar = profile.photos?.[0]?.value || '';
+      if (!user.avatar || /^https?:\/\/.*googleusercontent\.com/i.test(user.avatar)) {
+        user.avatar = googleAvatar || user.avatar || '';
+      }
       await user.save();
       delete req.session.linkGoogle;
       return done(null, user);
@@ -104,8 +108,14 @@ passport.use(new GoogleStrategy({
         googleId: profile.id,
         name: profile.displayName,
         email: profile.emails?.[0]?.value || '',
-        avatar: profile.photos?.[0]?.value || ''
+        avatar: googleAvatar || ''
       });
+    } else if (!user.avatar || /^https?:\/\/.*googleusercontent\.com/i.test(user.avatar)) {
+      const nextAvatar = googleAvatar || user.avatar || '';
+      if (nextAvatar !== user.avatar) {
+        user.avatar = nextAvatar;
+        await user.save();
+      }
     }
     if (user.banned) return done(null, false, { message: 'Your account has been banned', reason: user.banReason || '', isBanned: true });
     if (user.timedOutUntil && new Date(user.timedOutUntil).getTime() > Date.now()) return done(null, false, { message: 'Your account is temporarily suspended', reason: user.timeoutReason || '', isSuspended: true });
@@ -123,6 +133,7 @@ passport.use(new FacebookStrategy({
   passReqToCallback: true
 }, async (req, accessToken, refreshToken, profile, done) => {
   try {
+    const googleAvatar = await cacheRemoteAvatar(profile.photos?.[0]?.value || '', profile.id);
     if (req.session && req.session.linkFacebook) {
       const user = await User.findById(req.session.passport.user);
       if (!user) return done(null, false, { message: 'Not authenticated' });
@@ -131,7 +142,9 @@ passport.use(new FacebookStrategy({
         return done(null, false, { message: 'Facebook account already linked to another user' });
       }
       user.facebookId = profile.id;
-      if (!user.avatar) user.avatar = profile.photos?.[0]?.value || '';
+      if (!user.avatar || /^https?:\/\/.*googleusercontent\.com/i.test(user.avatar)) {
+        user.avatar = googleAvatar || user.avatar || '';
+      }
       await user.save();
       delete req.session.linkFacebook;
       return done(null, user);
@@ -142,7 +155,7 @@ passport.use(new FacebookStrategy({
         facebookId: profile.id,
         name: profile.displayName || 'Facebook User',
         email: profile.emails?.[0]?.value || '',
-        avatar: profile.photos?.[0]?.value || ''
+        avatar: googleAvatar || profile.photos?.[0]?.value || ''
       });
     }
     if (user.banned) return done(null, false, { message: 'Your account has been banned', reason: user.banReason || '', isBanned: true });
