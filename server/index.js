@@ -9,7 +9,7 @@ import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import session from 'express-session';
-import MongoStore from 'connect-mongo';
+
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as FacebookStrategy } from 'passport-facebook';
@@ -63,10 +63,6 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'fallback-secret-change-me',
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({
-    clientPromise: mongoConnectPromise.then(() => mongoose.connection.getClient()),
-    ttl: 14 * 24 * 60 * 60
-  }),
   cookie: {
     maxAge: 14 * 24 * 60 * 60 * 1000,
     httpOnly: true,
