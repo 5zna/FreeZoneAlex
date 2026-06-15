@@ -55,7 +55,12 @@ app.use(cors({
 }));
 
 app.use(express.json({ limit: '10mb' }));
-app.use(blockIP);
+
+/* Skip blockIP for static assets */
+app.use(function(req, res, next) {
+  if (req.path.match(/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff2?)$/i)) return next();
+  return blockIP(req, res, next);
+});
 
 const mongoConnectPromise = mongoose.connect(process.env.MONGO_URI);
 
@@ -152,13 +157,25 @@ passport.use(new FacebookStrategy({
   }
 }));
 
+var userCache = new Map();
+var USER_CACHE_TTL = 60000;
+
 passport.serializeUser((user, done) => {
   done(null, user.id);
 });
 
 passport.deserializeUser(async (id, done) => {
   try {
-    const user = await User.findById(id);
+    var cached = userCache.get(id);
+    if (cached && Date.now() - cached.ts < USER_CACHE_TTL) return done(null, cached.user);
+    const user = await User.findById(id).lean();
+    if (user) {
+      userCache.set(id, { user, ts: Date.now() });
+      if (userCache.size > 500) {
+        var keys = userCache.keys();
+        for (var i = 0; i < 100; i++) { var k = keys.next().value; if (k !== undefined) userCache.delete(k); }
+      }
+    }
     done(null, user);
   } catch (err) {
     done(err, null);
@@ -207,8 +224,10 @@ app.get('/social', (req, res) => res.sendFile(join(pages, 'social.html')));
 app.get('/verified.svg', (req, res) => { res.sendFile(join(__dirname, '..', 'assets', 'icons', 'verified.svg')); });
 
 /* Serve page HTML files at root and project static assets */
-app.use(express.static(pages));
-app.use(express.static(join(__dirname, '..')));
+app.use(express.static(pages, { maxAge: '1h' }));
+app.use('/assets', express.static(join(__dirname, '..', 'assets'), { maxAge: '1h' }));
+app.use('/css', express.static(join(__dirname, '..', 'css'), { maxAge: '1h' }));
+app.use('/js', express.static(join(__dirname, '..', 'js'), { maxAge: '1h' }));
 
 app.use('/api', authRoutes);
 app.use('/api', profileRoutes);
