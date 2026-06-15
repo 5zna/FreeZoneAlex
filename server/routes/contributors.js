@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import ContributorCategory from '../models/ContributorCategory.js';
-import User from '../models/User.js';
-import auth from '../middleware/auth.js';
+import ContributorCategory from '../server/models/ContributorCategory.js';
+import User from '../server/models/User.js';
+import auth from '../server/middleware/auth.js';
 
 var router = Router();
 
@@ -9,17 +9,7 @@ function isDeveloper(req) {
   return req.user && req.user.role === 'developer';
 }
 
-router.get('/contributors/users', auth, async (req, res) => {
-  if (!isDeveloper(req)) return res.status(403).json({ message: 'Only developer can access' });
-  try {
-    var users = await User.find().select('name username avatar').sort({ name: 1 }).lean();
-    return res.json(users);
-  } catch (err) {
-    return res.status(500).json({ message: err.message });
-  }
-});
-
-router.get('/contributors/categories', async (req, res) => {
+router.get('/contributors', async (req, res) => {
   try {
     var categories = await ContributorCategory.find().sort({ order: 1 }).lean();
     var userIds = new Set();
@@ -40,11 +30,11 @@ router.get('/contributors/categories', async (req, res) => {
     }
     return res.json(categories);
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 
-router.post('/contributors/categories', auth, async (req, res) => {
+router.post('/contributors', auth, async (req, res) => {
   if (!isDeveloper(req)) return res.status(403).json({ message: 'Only developer can manage contributors' });
   try {
     var { name, icon, entries } = req.body;
@@ -53,11 +43,11 @@ router.post('/contributors/categories', auth, async (req, res) => {
     var category = await ContributorCategory.create({ name: name.trim(), icon: icon || '', entries: entries || [], order: count });
     return res.status(201).json(category);
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 
-router.put('/contributors/categories/:id', auth, async (req, res) => {
+router.put('/contributors/:id', auth, async (req, res) => {
   if (!isDeveloper(req)) return res.status(403).json({ message: 'Only developer can manage contributors' });
   try {
     var { name, icon, entries, order } = req.body;
@@ -74,17 +64,17 @@ router.put('/contributors/categories/:id', auth, async (req, res) => {
     await category.save();
     return res.json(category.toObject());
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 
-router.delete('/contributors/categories/:id', auth, async (req, res) => {
+router.delete('/contributors/:id', auth, async (req, res) => {
   if (!isDeveloper(req)) return res.status(403).json({ message: 'Only developer can manage contributors' });
   try {
     await ContributorCategory.findByIdAndDelete(req.params.id);
     return res.json({ message: 'Deleted' });
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 

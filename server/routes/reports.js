@@ -1,8 +1,8 @@
 import express from 'express';
-import Report from '../models/Report.js';
-import Reply from '../models/Reply.js';
-import MemberRole from '../models/MemberRole.js';
-import { memberDocHasOwner } from '../utils/memberRoleUtils.js';
+import Report from '../server/models/Report.js';
+import Reply from '../server/models/Reply.js';
+import MemberRole from '../server/models/MemberRole.js';
+import { memberDocHasOwner } from '../server/utils/memberRoleUtils.js';
 
 var router = express.Router();
 
@@ -69,12 +69,11 @@ router.post('/reports', async (req, res) => {
     var report = await Report.create({ userId: req.user._id, type, title, content: content || '', attachments: attachments || [] });
     return res.status(201).json({ report });
   } catch (err) {
-    console.error('Report create error:', err);
-    return res.status(500).json({ message: 'Server error', error: err.message });
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 
-router.get('/reports/my', async (req, res) => {
+router.get('/reports', async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
     var reports = await Report.find({ userId: req.user._id }).sort({ createdAt: -1 }).lean();

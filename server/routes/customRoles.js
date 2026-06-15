@@ -17,17 +17,13 @@ async function requireAdmin(req, res, next) {
   return res.status(403).json({ message: 'Admin or developer access required' });
 }
 
-/* GET /custom-roles */
 router.get('/custom-roles', auth, requireAdmin, async (req, res) => {
   try {
     const roles = await cacheGet('custom-roles', 30000, () => CustomRole.find().sort({ name: 1 }).lean());
     res.json({ roles });
-  } catch (err) {
-    res.status(500).json({ message: 'Server error' });
-  }
+  } catch { res.status(500).json({ message: 'Server error' }); }
 });
 
-/* POST /custom-roles */
 router.post('/custom-roles', auth, requireAdmin, async (req, res) => {
   try {
     const { name, icon, permissions } = req.body;
@@ -41,7 +37,6 @@ router.post('/custom-roles', auth, requireAdmin, async (req, res) => {
   }
 });
 
-/* PUT /custom-roles/:id */
 router.put('/custom-roles/:id', auth, requireAdmin, async (req, res) => {
   try {
     const { name, icon, permissions } = req.body;
@@ -57,16 +52,13 @@ router.put('/custom-roles/:id', auth, requireAdmin, async (req, res) => {
   }
 });
 
-/* DELETE /custom-roles/:id */
 router.delete('/custom-roles/:id', auth, requireAdmin, async (req, res) => {
   try {
     const role = await CustomRole.findByIdAndDelete(req.params.id);
     if (!role) return res.status(404).json({ message: 'Role not found' });
     clearCache('custom-roles');
     res.json({ message: 'Deleted' });
-  } catch (err) {
-    res.status(500).json({ message: 'Server error' });
-  }
+  } catch { res.status(500).json({ message: 'Server error' }); }
 });
 
 export default router;

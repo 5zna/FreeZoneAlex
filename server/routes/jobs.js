@@ -1,17 +1,19 @@
 import { Router } from 'express';
-import Job from '../models/Job.js';
-import auth from '../middleware/auth.js';
+import Job from '../server/models/Job.js';
+import auth from '../server/middleware/auth.js';
 import { createNotification } from './notifications.js';
-import { containsProfanity } from '../utils/profanityFilter.js';
-import MemberRole from '../models/MemberRole.js';
-import { memberDocHasOwner } from '../utils/memberRoleUtils.js';
+import { containsProfanity } from '../server/utils/profanityFilter.js';
+import MemberRole from '../server/models/MemberRole.js';
+import { memberDocHasOwner } from '../server/utils/memberRoleUtils.js';
 
 function isAdmin(req) {
   return req.user && (req.user.role === 'admin' || req.user.role === 'developer');
 }
+
 function isStaffByRole(req) {
   return req.user && (req.user.role === 'admin' || req.user.role === 'developer' || req.user.role === 'moderator');
 }
+
 async function isStaff(req) {
   if (!req.user) return false;
   if (req.user.role === 'admin' || req.user.role === 'developer' || req.user.role === 'moderator') return true;
@@ -48,10 +50,28 @@ router.get('/jobs', optionalAuth, async (req, res) => {
         filter = { source: 'member', status: 'approved' };
       }
     }
-    const jobs = await Job.find(filter).sort({ bumpedAt: -1 }).lean();
+    const jobs = await Job.find(filter).sort({ createdAt: -1 }).lean();
     res.json({ jobs });
   } catch (err) {
-    console.error('[GET /jobs] Error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.get('/jobs/search', optionalAuth, async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || !q.trim()) return res.status(400).json({ message: 'Search query is required' });
+    const regex = new RegExp(q.trim(), 'i');
+    const jobs = await Job.find({
+      $or: [
+        { title_en: regex },
+        { title_ar: regex },
+        { company: regex },
+        { tags: { $in: [regex] } }
+      ]
+    }).sort({ createdAt: -1 }).lean();
+    res.json({ jobs });
+  } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -89,7 +109,7 @@ router.post('/jobs', auth, async (req, res) => {
     });
     if (isMemberSource) {
       try {
-        const User = (await import('../models/User.js')).default;
+        const User = (await import('../server/models/User.js')).default;
         const admins = await User.find({ role: { $in: ['admin', 'developer'] } }).select('_id').lean();
         const title = title_en || 'A job';
         for (const admin of admins) {
@@ -136,7 +156,7 @@ router.put('/jobs/:id', auth, async (req, res) => {
       job.status = 'pending';
       job.bumpedAt = new Date();
       try {
-        const User = (await import('../models/User.js')).default;
+        const User = (await import('../server/models/User.js')).default;
         const admins = await User.find({ role: { $in: ['admin', 'developer'] } }).select('_id').lean();
         const title = job.title_en || job.title_ar || 'A job';
         for (const admin of admins) {
@@ -147,97 +167,6 @@ router.put('/jobs/:id', auth, async (req, res) => {
     await job.save();
     res.json({ job });
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-router.patch('/jobs/:id/hiring', auth, async (req, res) => {
-  try {
-    const job = await Job.findById(req.params.id);
-    if (!job) return res.status(404).json({ message: 'Job not found' });
-    if (job.postedBy && job.postedBy.toString() !== req.userId.toString()) {
-      return res.status(403).json({ message: 'Not authorized' });
-    }
-    job.hiring = !job.hiring;
-    await job.save();
-    res.json({ job });
-  } catch (err) {
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-router.post('/jobs/:id/bump', auth, async (req, res) => {
-  try {
-    const job = await Job.findById(req.params.id);
-    if (!job) return res.status(404).json({ message: 'Job not found' });
-    const ownsJob = job.postedBy && job.postedBy.toString() === req.userId.toString();
-    if (!ownsJob && !isAdmin(req)) {
-      return res.status(403).json({ message: 'Not authorized' });
-    }
-    const COOLDOWN_MS = 60 * 60 * 1000;
-    if (job.bumpedAt) {
-      const elapsed = Date.now() - new Date(job.bumpedAt).getTime();
-      if (elapsed < COOLDOWN_MS) {
-        const remainingMin = Math.ceil((COOLDOWN_MS - elapsed) / 60000);
-        return res.status(429).json({ message: `Please wait ${remainingMin} minute(s) before bumping again` });
-      }
-    }
-    job.bumpedAt = new Date();
-    await job.save();
-    res.json({ job });
-  } catch (err) {
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-router.get('/jobs/pending-count', auth, async (req, res) => {
-  try {
-    if (!(await isStaff(req))) return res.json({ count: 0 });
-    const count = await Job.countDocuments({ source: 'member', status: 'pending' });
-    res.json({ count });
-  } catch { res.status(500).json({ message: 'Server error' }); }
-});
-
-router.post('/jobs/:id/approve', auth, async (req, res) => {
-  try {
-    if (req.user) {
-      console.log('[APPROVE] Request by User ID:', req.user._id, 'Name:', req.user.name, 'Role:', req.user.role);
-    } else {
-      console.log('[APPROVE] Request by unauthenticated user?');
-    }
-    if (!(await isStaff(req))) return res.status(403).json({ message: 'Not authorized' });
-    const job = await Job.findByIdAndUpdate(req.params.id, { status: 'approved' }, { new: true });
-    if (!job) return res.status(404).json({ message: 'Job not found' });
-    if (job.postedBy) {
-      const title = job.title_ar || job.title_en || 'Job';
-      await createNotification({ userId: job.postedBy, type: 'job_approved', message: `Your job "${title}" has been approved`, link: '/member-jobs' });
-    }
-    res.json({ job });
-  } catch (err) {
-    console.error('[APPROVE] Error:', err);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-router.post('/jobs/:id/reject', auth, async (req, res) => {
-  try {
-    if (req.user) {
-      console.log('[REJECT] Request by User ID:', req.user._id, 'Name:', req.user.name, 'Role:', req.user.role);
-    } else {
-      console.log('[REJECT] Request by unauthenticated user?');
-    }
-    if (!(await isStaff(req))) return res.status(403).json({ message: 'Not authorized' });
-    const job = await Job.findByIdAndDelete(req.params.id);
-    if (!job) return res.status(404).json({ message: 'Job not found' });
-    const reason = req.body?.reason || '(no reason)';
-    console.log(`[REJECT] Job ${req.params.id} "${job.title_ar || job.title_en}" rejected by ${req.userId}. Reason: ${reason}`);
-    if (job.postedBy) {
-      const title = job.title_ar || job.title_en || 'Job';
-      await createNotification({ userId: job.postedBy, type: 'job_rejected', message: `Your job "${title}" has been rejected. Reason: ${reason}`, link: '/member-jobs' });
-    }
-    res.json({ message: 'Deleted', reason });
-  } catch (err) {
-    console.error('[REJECT] Error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });

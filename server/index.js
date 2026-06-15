@@ -25,10 +25,11 @@ import customRoleRoutes from './routes/customRoles.js';
 import settingsRoutes from './routes/settings.js';
 import contributorRoutes from './routes/contributors.js';
 import reportRoutes from './routes/reports.js';
+import auditLogRoutes from './routes/auditLogs.js';
 import { getSettings } from './routes/settings.js';
 import { startReportCleanup } from './utils/cleanup.js';
 import MemberRole from './models/MemberRole.js';
-import { memberDocHasOwner, normalizeMemberRoles } from './utils/memberRoleUtils.js';
+import { normalizeMemberRoles } from './utils/memberRoleUtils.js';
 import blockIP from './middleware/blockIP.js';
 
 const app = express();
@@ -192,7 +193,7 @@ app.use(async (req, res, next) => {
 });
 
 /* Clean URL routes — no .html extension needed */
-var pages = join(__dirname, '..', 'pages');
+var pages = join(__dirname, 'pages');
 app.get('/', (req, res) => res.sendFile(join(pages, 'home.html')));
 app.get('/home', (req, res) => res.sendFile(join(pages, 'home.html')));
 app.get('/jobs', (req, res) => res.sendFile(join(pages, 'jobs.html')));
@@ -223,6 +224,7 @@ app.use('/api', customRoleRoutes);
 app.use('/api', settingsRoutes);
 app.use('/api', contributorRoutes);
 app.use('/api', reportRoutes);
+app.use('/api', auditLogRoutes);
 
 app.get('/api/auth/check-dashboard', async (req, res) => {
   if (!req.isAuthenticated()) return res.status(403).json({ authorized: false, message: 'Dashboard access denied' });

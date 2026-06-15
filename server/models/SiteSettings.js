@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
-var siteSettingsSchema = new mongoose.Schema({
-  key: { type: String, unique: true, default: 'global' },
+const siteSettingsSchema = new mongoose.Schema({
+  key: { type: String, unique: true },
   maintenance: { type: Boolean, default: false },
   maintenanceReason: { type: String, default: '' },
   alert: { type: String, default: '' },
