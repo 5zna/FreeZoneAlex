@@ -6,6 +6,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: join(__dirname, '.env') });
 
 import express from 'express';
+import compression from 'compression';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import session from 'express-session';
@@ -43,6 +44,7 @@ var allowedOrigins = [
   'http://127.0.0.1:4000',
   'http://localhost:4000'
 ];
+app.use(compression({ level: 6, threshold: 0 }));
 app.use(cors({
   origin: function(origin, callback) {
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {

@@ -14,7 +14,14 @@ import { initNotificationHandler } from './handlers/notificationHandler.js';
 import { initContributorHandler } from './handlers/contributorHandler.js';
 import { initNewsTickerHandler } from './handlers/newsTickerHandler.js';
 
+function registerSW() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  registerSW();
   initThemeHandler();
   initTranslationHandler();
   initAuthHandler();
