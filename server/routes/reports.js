@@ -1,9 +1,11 @@
 import express from 'express';
 import Report from '../models/Report.js';
 import Reply from '../models/Reply.js';
+import User from '../models/User.js';
 import MemberRole from '../models/MemberRole.js';
 import { memberDocHasOwner } from '../utils/memberRoleUtils.js';
 import { createAuditLog, actorSnapshot } from '../utils/auditLog.js';
+import { createNotification } from './notifications.js';
 
 var router = express.Router();
 
@@ -146,6 +148,22 @@ router.post('/reports/:id/replies', async (req, res) => {
     }
     populated.isStaffReply = staff;
     await createAuditLog({ category: staff ? 'staff' : 'activity', type: 'report_reply', actionType: staff ? 'staff_reply' : 'reply', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Replied to a report', targetType: 'report', targetId: String(report._id), targetName: report.title, details: content.trim().slice(0, 180) });
+    var actorName = req.user.displayName || req.user.name || 'Someone';
+    var reporterId = String(report.userId);
+    var replierId = String(req.user._id);
+    if (replierId === reporterId) {
+      var allStaff = await User.find({ role: { $in: ['developer', 'admin', 'moderator'] } }).select('_id').lean();
+      var staffIds = allStaff.map(function(s) { return String(s._id); });
+      var ownerMRS = await MemberRole.find({}).lean();
+      ownerMRS.forEach(function(mr) {
+        if (memberDocHasOwner(mr) && !staffIds.includes(String(mr.userId))) staffIds.push(String(mr.userId));
+      });
+      staffIds.forEach(function(uid) {
+        createNotification({ userId: uid, type: 'report_reply', message: actorName + ' replied to a report "' + (report.title || '').slice(0, 60) + '"', link: '' });
+      });
+    } else {
+      await createNotification({ userId: reporterId, type: 'report_reply', message: actorName + ' replied to your report "' + (report.title || '').slice(0, 60) + '"', link: '' });
+    }
     return res.status(201).json({ reply: populated });
   } catch (err) {
     return res.status(500).json({ message: 'Server error' });
