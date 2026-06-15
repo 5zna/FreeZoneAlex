@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../core/constants.js';
+import { getCachedSettings } from './authHandler.js';
 
 const ROTATION_DELAY = 4500;
 const FADE_DELAY = 260;
@@ -12,11 +12,7 @@ export function initNewsTickerHandler() {
     renderTicker(ticker, track, news);
   });
 
-  fetch(API_BASE_URL + '/settings', { credentials: 'include' })
-    .then((res) => {
-      if (!res.ok) throw new Error('Failed to load settings');
-      return res.json();
-    })
+  getCachedSettings()
     .then((data) => {
       const news = Array.isArray(data.settings?.news) ? data.settings.news : [];
       renderTicker(ticker, track, news);

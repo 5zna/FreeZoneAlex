@@ -179,9 +179,28 @@ export async function refreshUser() {
 }
 
 var _alertBar = null;
-export function checkSiteAlert() {
-  fetch(API_BASE_URL + '/settings', { credentials: 'include' })
+var _settingsCache = null;
+var _settingsPromise = null;
+
+export function getCachedSettings() {
+  if (_settingsCache) return Promise.resolve(_settingsCache);
+  if (_settingsPromise) return _settingsPromise;
+  _settingsPromise = fetch(API_BASE_URL + '/settings', { credentials: 'include' })
     .then(function(r) { if (r.ok) return r.json(); throw new Error(); })
+    .then(function(data) {
+      _settingsCache = data;
+      _settingsPromise = null;
+      return data;
+    })
+    .catch(function(err) {
+      _settingsPromise = null;
+      throw err;
+    });
+  return _settingsPromise;
+}
+
+export function checkSiteAlert() {
+  getCachedSettings()
     .then(function(data) {
       var alertText = data.settings && data.settings.alert ? data.settings.alert.trim() : '';
       var faviconUrl = data.settings && data.settings.favicon ? data.settings.favicon : '';

@@ -197,7 +197,7 @@ export function initNotificationHandler() {
   let pollInterval = setInterval(() => {
     if (document.hidden) return;
     if (getCurrentUser()) fetchUnreadCount();
-  }, 30000);
+  }, 60000);
 
   window.addEventListener('visibilitychange', () => {
     if (!document.hidden && getCurrentUser()) {

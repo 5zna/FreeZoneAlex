@@ -10,7 +10,7 @@ const router = Router();
 
 var cachedSettings = null;
 var cacheTime = 0;
-var CACHE_TTL = 5000;
+var CACHE_TTL = 300000;
 
 function normalizeNewsItems(items) {
   if (!Array.isArray(items)) return [];
