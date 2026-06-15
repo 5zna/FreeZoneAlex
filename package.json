@@ -7,6 +7,7 @@
     "dev": "npx nodemon server/index.js",
     "start": "node server/index.js",
     "server": "node server/index.js",
+    "build": "node scripts/build.mjs",
     "pm2": "pm2 start ecosystem.config.cjs",
     "pm2:stop": "pm2 stop ecosystem.config.cjs",
     "pm2:restart": "pm2 restart ecosystem.config.cjs",
@@ -14,7 +15,10 @@
     "pm2:status": "pm2 status"
   },
   "devDependencies": {
-    "nodemon": "^3.0.0"
+    "clean-css": "^5.3.3",
+    "html-minifier-terser": "^7.2.0",
+    "nodemon": "^3.0.0",
+    "terser": "^5.48.0"
   },
   "keywords": [
     "alexandria",
