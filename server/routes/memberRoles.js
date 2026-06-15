@@ -78,7 +78,7 @@ router.put('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
     
     const systemRanks = ['owner', 'admin', 'moderator', 'developer'];
     if (systemRanks.includes(actualRole)) {
-      await User.findByIdAndUpdate(req.params.userId, { role: actualRole }, { new: true });
+      await User.findByIdAndUpdate(req.params.userId, { role: actualRole }, { new: true }).exec();
     }
     
     await createAuditLog({ category: 'staff', type: 'member_role_add', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Added member role', targetType: 'member-role', targetId: String(req.params.userId), details: roleName });
@@ -97,7 +97,7 @@ router.put('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
     
     const systemRanks = ['owner', 'admin', 'moderator', 'developer'];
     if (systemRanks.includes(actualRole)) {
-      await User.findByIdAndUpdate(req.params.userId, { role: actualRole }, { new: true });
+      await User.findByIdAndUpdate(req.params.userId, { role: actualRole }, { new: true }).exec();
     }
     
     await createAuditLog({ category: 'staff', type: 'member_role_add', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Added member role', targetType: 'member-role', targetId: String(req.params.userId), details: roleName });
@@ -136,7 +136,7 @@ router.delete('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
     await doc.deleteOne();
     
     // Reset user role to user when all roles are cleared
-    await User.findByIdAndUpdate(req.params.userId, { role: 'user' }, { new: true });
+    await User.findByIdAndUpdate(req.params.userId, { role: 'user' }, { new: true }).exec();
     
     await createAuditLog({ category: 'staff', type: 'member_role_clear', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Removed all member roles', targetType: 'member-role', targetId: String(req.params.userId) });
     return res.json({ roles: [] });
@@ -157,7 +157,7 @@ router.delete('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
     if (doc.roles.length === 0) {
       await doc.deleteOne();
       // Reset to user if no roles left
-      await User.findByIdAndUpdate(req.params.userId, { role: 'user' }, { new: true });
+      await User.findByIdAndUpdate(req.params.userId, { role: 'user' }, { new: true }).exec();
       await createAuditLog({ category: 'staff', type: 'member_role_remove', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Removed member role', targetType: 'member-role', targetId: String(req.params.userId), details: roleName });
       return res.json({ roles: [] });
     }
@@ -174,10 +174,10 @@ router.delete('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
       // Priority order: owner > developer > admin > moderator
       const rankPriority = { owner: 4, developer: 3, admin: 2, moderator: 1 };
       remainingSystemRanks.sort((a, b) => rankPriority[b] - rankPriority[a]);
-      await User.findByIdAndUpdate(req.params.userId, { role: remainingSystemRanks[0] }, { new: true });
+      await User.findByIdAndUpdate(req.params.userId, { role: remainingSystemRanks[0] }, { new: true }).exec();
     } else {
       // No system ranks left, set to user
-      await User.findByIdAndUpdate(req.params.userId, { role: 'user' }, { new: true });
+      await User.findByIdAndUpdate(req.params.userId, { role: 'user' }, { new: true }).exec();
     }
     
     await createAuditLog({ category: 'staff', type: 'member_role_remove', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Removed member role', targetType: 'member-role', targetId: String(req.params.userId), details: roleName });
