@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import auth from '../middleware/auth.js';
 import MemberRole from '../models/MemberRole.js';
+import User from '../models/User.js';
 import {
   normalizeMemberRoles,
   memberDocHasOwner,
@@ -67,16 +68,30 @@ router.put('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
       if (existing.some(r => r.name === roleName)) {
         return res.json({ roles: existing });
       }
-      doc.roles.push({ roleName, roleIcon: finalIcon });
-      await doc.save();
-      await createAuditLog({ category: 'staff', type: 'member_role_add', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Added member role', targetType: 'member-role', targetId: String(req.params.userId), details: roleName });
-      return res.json({ roles: normalizeMemberRoles(doc) });
+    doc.roles.push({ roleName, roleIcon: finalIcon });
+    await doc.save();
+    
+    // Update user base role if this is a system rank
+    const systemRanks = ['owner', 'admin', 'moderator', 'developer'];
+    if (systemRanks.includes(roleName)) {
+      await User.findByIdAndUpdate(req.params.userId, { role: roleName }, { new: true });
+    }
+    
+    await createAuditLog({ category: 'staff', type: 'member_role_add', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Added member role', targetType: 'member-role', targetId: String(req.params.userId), details: roleName });
+    return res.json({ roles: normalizeMemberRoles(doc) });
     }
 
     doc = await MemberRole.create({
       userId: req.params.userId,
       roles: [{ roleName, roleIcon: finalIcon }]
     });
+    
+    // Update user base role if this is a system rank
+    const systemRanks = ['owner', 'admin', 'moderator', 'developer'];
+    if (systemRanks.includes(roleName)) {
+      await User.findByIdAndUpdate(req.params.userId, { role: roleName }, { new: true });
+    }
+    
     await createAuditLog({ category: 'staff', type: 'member_role_add', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Added member role', targetType: 'member-role', targetId: String(req.params.userId), details: roleName });
     res.json({ roles: normalizeMemberRoles(doc) });
   } catch {
@@ -110,9 +125,13 @@ router.delete('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
       if (ownerRole && req.user.role !== 'developer' && req.params.userId !== req.user._id.toString()) {
         return res.status(403).json({ message: 'Only developer or the Owner themselves can remove Owner role' });
       }
-      await doc.deleteOne();
-      await createAuditLog({ category: 'staff', type: 'member_role_clear', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Removed all member roles', targetType: 'member-role', targetId: String(req.params.userId) });
-      return res.json({ roles: [] });
+    await doc.deleteOne();
+    
+    // Reset user role to user when all roles are cleared
+    await User.findByIdAndUpdate(req.params.userId, { role: 'user' }, { new: true });
+    
+    await createAuditLog({ category: 'staff', type: 'member_role_clear', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Removed all member roles', targetType: 'member-role', targetId: String(req.params.userId) });
+    return res.json({ roles: [] });
     }
 
     const removing = existing.find(r => r.name === roleName);
@@ -123,12 +142,34 @@ router.delete('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
     }
 
     doc.roles = doc.roles.filter(r => r.roleName !== roleName);
+    
+    // Handle user role update when removing system ranks
+    const systemRanks = ['owner', 'admin', 'moderator', 'developer'];
+    
     if (doc.roles.length === 0) {
       await doc.deleteOne();
+      // Reset to user if no roles left
+      await User.findByIdAndUpdate(req.params.userId, { role: 'user' }, { new: true });
       await createAuditLog({ category: 'staff', type: 'member_role_remove', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Removed member role', targetType: 'member-role', targetId: String(req.params.userId), details: roleName });
       return res.json({ roles: [] });
     }
+    
     await doc.save();
+    
+    // If we removed the current user role, find highest remaining system rank or fallback to user
+    const remainingRoles = normalizeMemberRoles(doc).map(r => r.name);
+    const remainingSystemRanks = remainingRoles.filter(r => systemRanks.includes(r));
+    
+    if (remainingSystemRanks.length > 0) {
+      // Priority order: owner > developer > admin > moderator
+      const rankPriority = { owner: 4, developer: 3, admin: 2, moderator: 1 };
+      remainingSystemRanks.sort((a, b) => rankPriority[b] - rankPriority[a]);
+      await User.findByIdAndUpdate(req.params.userId, { role: remainingSystemRanks[0] }, { new: true });
+    } else {
+      // No system ranks left, set to user
+      await User.findByIdAndUpdate(req.params.userId, { role: 'user' }, { new: true });
+    }
+    
     await createAuditLog({ category: 'staff', type: 'member_role_remove', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Removed member role', targetType: 'member-role', targetId: String(req.params.userId), details: roleName });
     res.json({ roles: normalizeMemberRoles(doc) });
   } catch {
