@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import passport from 'passport';
-import User from '../server/models/User.js';
-import auth from '../server/middleware/auth.js';
-import { containsProfanity } from '../server/utils/profanityFilter.js';
+import User from '../models/User.js';
+import auth from '../middleware/auth.js';
+import { containsProfanity } from '../utils/profanityFilter.js';
 
 const router = Router();
 
@@ -48,13 +48,21 @@ router.get('/auth/facebook/callback', (req, res, next) => {
   })(req, res, next);
 });
 
+/* Link Google to existing account — initiates OAuth with link flag */
 router.get('/auth/link/google', auth, (req, res) => {
   req.session.linkGoogle = true;
   passport.authenticate('google', { scope: ['profile', 'email'] })(req, res);
 });
 
+/* Unlink Google from existing account */
 router.post('/auth/unlink/google', auth, async (req, res) => {
   try {
+    const userDoc = await User.findById(req.userId).select('googleId facebookId');
+    if (!userDoc) return res.status(404).json({ message: 'User not found' });
+    const linkedCount = [userDoc.googleId, userDoc.facebookId].filter(Boolean).length;
+    if (linkedCount <= 1) {
+      return res.status(400).json({ message: 'Keep at least one login method linked' });
+    }
     const user = await User.findByIdAndUpdate(req.userId, { $unset: { googleId: '' } }, { new: true });
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json({ user });
@@ -63,13 +71,21 @@ router.post('/auth/unlink/google', auth, async (req, res) => {
   }
 });
 
+/* Link Facebook to existing account — initiates OAuth with link flag */
 router.get('/auth/link/facebook', auth, (req, res) => {
   req.session.linkFacebook = true;
   passport.authenticate('facebook', { scope: ['public_profile'] })(req, res);
 });
 
+/* Unlink Facebook from existing account */
 router.post('/auth/unlink/facebook', auth, async (req, res) => {
   try {
+    const userDoc = await User.findById(req.userId).select('googleId facebookId');
+    if (!userDoc) return res.status(404).json({ message: 'User not found' });
+    const linkedCount = [userDoc.googleId, userDoc.facebookId].filter(Boolean).length;
+    if (linkedCount <= 1) {
+      return res.status(400).json({ message: 'Keep at least one login method linked' });
+    }
     const user = await User.findByIdAndUpdate(req.userId, { $unset: { facebookId: '' } }, { new: true });
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json({ user });

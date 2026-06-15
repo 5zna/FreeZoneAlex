@@ -9,7 +9,7 @@ import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import session from 'express-session';
-
+import MongoStore from 'connect-mongo';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as FacebookStrategy } from 'passport-facebook';
@@ -29,7 +29,7 @@ import auditLogRoutes from './routes/auditLogs.js';
 import { getSettings } from './routes/settings.js';
 import { startReportCleanup } from './utils/cleanup.js';
 import MemberRole from './models/MemberRole.js';
-import { normalizeMemberRoles } from './utils/memberRoleUtils.js';
+import { memberDocHasOwner, normalizeMemberRoles } from './utils/memberRoleUtils.js';
 import blockIP from './middleware/blockIP.js';
 
 const app = express();
@@ -64,6 +64,10 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'fallback-secret-change-me',
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({
+    clientPromise: mongoConnectPromise.then(() => mongoose.connection.getClient()),
+    ttl: 14 * 24 * 60 * 60
+  }),
   cookie: {
     maxAge: 14 * 24 * 60 * 60 * 1000,
     httpOnly: true,
@@ -153,15 +157,9 @@ passport.serializeUser((user, done) => {
   done(null, user.id);
 });
 
-var userCache = new Map();
-var userCacheTTL = 15000;
-
 passport.deserializeUser(async (id, done) => {
   try {
-    var entry = userCache.get(id);
-    if (entry && Date.now() - entry.time < userCacheTTL) return done(null, entry.user);
-    const user = await User.findById(id, 'name displayName username email avatar role banned banReason timedOutUntil timeoutReason');
-    if (user) userCache.set(id, { user, time: Date.now() });
+    const user = await User.findById(id);
     done(null, user);
   } catch (err) {
     done(err, null);
@@ -193,7 +191,7 @@ app.use(async (req, res, next) => {
 });
 
 /* Clean URL routes — no .html extension needed */
-var pages = join(__dirname, 'pages');
+var pages = join(__dirname, '..', 'pages');
 app.get('/', (req, res) => res.sendFile(join(pages, 'home.html')));
 app.get('/home', (req, res) => res.sendFile(join(pages, 'home.html')));
 app.get('/jobs', (req, res) => res.sendFile(join(pages, 'jobs.html')));

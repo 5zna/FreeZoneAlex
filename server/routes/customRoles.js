@@ -3,7 +3,7 @@ import auth from '../middleware/auth.js';
 import CustomRole from '../models/CustomRole.js';
 import MemberRole from '../models/MemberRole.js';
 import { memberDocHasOwner } from '../utils/memberRoleUtils.js';
-import { cacheGet, clearCache } from '../utils/cache.js';
+import { createAuditLog, actorSnapshot } from '../utils/auditLog.js';
 
 const router = Router();
 
@@ -17,19 +17,23 @@ async function requireAdmin(req, res, next) {
   return res.status(403).json({ message: 'Admin or developer access required' });
 }
 
+/* GET /custom-roles */
 router.get('/custom-roles', auth, requireAdmin, async (req, res) => {
   try {
-    const roles = await cacheGet('custom-roles', 30000, () => CustomRole.find().sort({ name: 1 }).lean());
+    const roles = await CustomRole.find().sort({ name: 1 }).lean();
     res.json({ roles });
-  } catch { res.status(500).json({ message: 'Server error' }); }
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
 });
 
+/* POST /custom-roles */
 router.post('/custom-roles', auth, requireAdmin, async (req, res) => {
   try {
     const { name, icon, permissions } = req.body;
     if (!name) return res.status(400).json({ message: 'name is required' });
     const role = await CustomRole.create({ name, icon: icon || '', permissions: permissions || {} });
-    clearCache('custom-roles');
+    await createAuditLog({ category: 'staff', type: 'custom_role_create', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Created custom role', targetType: 'custom-role', targetId: String(role._id), targetName: role.name });
     res.status(201).json({ role });
   } catch (err) {
     if (err.code === 11000) return res.status(409).json({ message: 'Role already exists' });
@@ -37,6 +41,7 @@ router.post('/custom-roles', auth, requireAdmin, async (req, res) => {
   }
 });
 
+/* PUT /custom-roles/:id */
 router.put('/custom-roles/:id', auth, requireAdmin, async (req, res) => {
   try {
     const { name, icon, permissions } = req.body;
@@ -44,7 +49,7 @@ router.put('/custom-roles/:id', auth, requireAdmin, async (req, res) => {
     if (permissions) update.permissions = permissions;
     const role = await CustomRole.findByIdAndUpdate(req.params.id, update, { new: true });
     if (!role) return res.status(404).json({ message: 'Role not found' });
-    clearCache('custom-roles');
+    await createAuditLog({ category: 'staff', type: 'custom_role_update', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Updated custom role', targetType: 'custom-role', targetId: String(role._id), targetName: role.name });
     res.json({ role });
   } catch (err) {
     if (err.code === 11000) return res.status(409).json({ message: 'Role name already exists' });
@@ -52,13 +57,16 @@ router.put('/custom-roles/:id', auth, requireAdmin, async (req, res) => {
   }
 });
 
+/* DELETE /custom-roles/:id */
 router.delete('/custom-roles/:id', auth, requireAdmin, async (req, res) => {
   try {
     const role = await CustomRole.findByIdAndDelete(req.params.id);
     if (!role) return res.status(404).json({ message: 'Role not found' });
-    clearCache('custom-roles');
+    await createAuditLog({ category: 'staff', type: 'custom_role_delete', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Deleted custom role', targetType: 'custom-role', targetId: String(role._id), targetName: role.name });
     res.json({ message: 'Deleted' });
-  } catch { res.status(500).json({ message: 'Server error' }); }
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
 });
 
 export default router;

@@ -1,29 +1,21 @@
 import { Router } from 'express';
-import AuditLog from '../server/models/AuditLog.js';
-import auth from '../server/middleware/auth.js';
+import auth from '../middleware/auth.js';
+import AuditLog from '../models/AuditLog.js';
+import { actorSnapshot, createAuditLog } from '../utils/auditLog.js';
 
 const router = Router();
 
 router.get('/audit-logs', auth, async (req, res) => {
   try {
-    const { category, type, limit, q } = req.query;
-    const filter = {};
-    if (category) filter.category = category;
-    if (type) filter.type = type;
-    if (q) {
-      const regex = new RegExp(q, 'i');
-      filter.$or = [
-        { action: regex },
-        { details: regex },
-        { 'user.name': regex },
-        { 'user.email': regex }
-      ];
-    }
-    const logs = await AuditLog.find(filter)
-      .sort({ createdAt: -1 })
-      .limit(parseInt(limit) || 100)
-      .lean();
-    res.json({ logs });
+    const category = req.query.category === 'staff' ? 'staff' : 'activity';
+    const q = (req.query.q || '').trim().toLowerCase();
+    const limit = Math.min(parseInt(req.query.limit, 10) || 200, 500);
+    const filter = { category };
+    const logs = await AuditLog.find(filter).sort({ createdAt: -1 }).limit(limit).lean();
+    const filtered = q ? logs.filter(l =>
+      [l.actorName, l.actorRole, l.targetName, l.message, l.details, l.type, l.actionType].join(' ').toLowerCase().includes(q)
+    ) : logs;
+    res.json({ logs: filtered });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -31,17 +23,20 @@ router.get('/audit-logs', auth, async (req, res) => {
 
 router.post('/audit-logs', auth, async (req, res) => {
   try {
-    const { category, type, action, details, userId, user } = req.body;
-    if (!category || !type || !action) {
-      return res.status(400).json({ message: 'category, type, and action are required' });
-    }
-    const log = await AuditLog.create({
-      category,
-      type,
-      action,
-      details: details || '',
-      userId: userId || req.userId,
-      user: user || { id: req.userId, name: req.user?.name || '' }
+    const actor = actorSnapshot(req.user);
+    const log = await createAuditLog({
+      category: req.body.category === 'staff' ? 'staff' : 'activity',
+      type: req.body.type || 'general',
+      actionType: req.body.actionType || '',
+      actorId: actor.actorId,
+      actorName: actor.actorName,
+      actorRole: actor.actorRole,
+      targetType: req.body.targetType || '',
+      targetId: req.body.targetId || '',
+      targetName: req.body.targetName || '',
+      message: req.body.message || '',
+      details: req.body.details || '',
+      meta: req.body.meta || {}
     });
     res.status(201).json({ log });
   } catch (err) {

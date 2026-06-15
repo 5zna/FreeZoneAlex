@@ -1,8 +1,11 @@
 import express from 'express';
-import Report from '../server/models/Report.js';
-import Reply from '../server/models/Reply.js';
-import MemberRole from '../server/models/MemberRole.js';
-import { memberDocHasOwner } from '../server/utils/memberRoleUtils.js';
+import Report from '../models/Report.js';
+import Reply from '../models/Reply.js';
+import User from '../models/User.js';
+import MemberRole from '../models/MemberRole.js';
+import { memberDocHasOwner } from '../utils/memberRoleUtils.js';
+import { createAuditLog, actorSnapshot } from '../utils/auditLog.js';
+import { createNotification } from './notifications.js';
 
 var router = express.Router();
 
@@ -67,13 +70,15 @@ router.post('/reports', async (req, res) => {
       }
     }
     var report = await Report.create({ userId: req.user._id, type, title, content: content || '', attachments: attachments || [] });
+    await createAuditLog({ category: 'activity', type: 'report_create', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Created report', targetType: 'report', targetId: String(report._id), targetName: report.title, details: report.type });
     return res.status(201).json({ report });
   } catch (err) {
-    return res.status(500).json({ message: 'Server error' });
+    console.error('Report create error:', err);
+    return res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
 
-router.get('/reports', async (req, res) => {
+router.get('/reports/my', async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
     var reports = await Report.find({ userId: req.user._id }).sort({ createdAt: -1 }).lean();
@@ -100,6 +105,7 @@ router.put('/reports/:id/status', async (req, res) => {
     if (!['open', 'in_progress', 'resolved', 'closed'].includes(status)) return res.status(400).json({ message: 'Invalid status' });
     var report = await Report.findByIdAndUpdate(req.params.id, { status }, { new: true }).lean();
     if (!report) return res.status(404).json({ message: 'Not found' });
+    await createAuditLog({ category: 'staff', type: 'report_status', actionType: 'status', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Changed report status to ' + status, targetType: 'report', targetId: String(report._id), targetName: report.title, details: report.status });
     return res.json({ report });
   } catch (err) {
     return res.status(500).json({ message: 'Server error' });
@@ -115,6 +121,7 @@ router.get('/reports/:id/replies', async (req, res) => {
     if (!allowed) return res.status(403).json({ message: 'Forbidden' });
     var replies = await Reply.find({ reportId: req.params.id }).sort({ createdAt: 1 }).populate('userId', 'name username avatar role').lean();
     replies = await attachReplyStaffFlags(replies);
+    await createAuditLog({ category: 'activity', type: 'report_view', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Viewed report replies', targetType: 'report', targetId: String(report._id), targetName: report.title });
     return res.json({ replies });
   } catch (err) {
     return res.status(500).json({ message: 'Server error' });
@@ -140,6 +147,23 @@ router.post('/reports/:id/replies', async (req, res) => {
       } catch {}
     }
     populated.isStaffReply = staff;
+    await createAuditLog({ category: staff ? 'staff' : 'activity', type: 'report_reply', actionType: staff ? 'staff_reply' : 'reply', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Replied to a report', targetType: 'report', targetId: String(report._id), targetName: report.title, details: content.trim().slice(0, 180) });
+    var actorName = req.user.displayName || req.user.name || 'Someone';
+    var reporterId = String(report.userId);
+    var replierId = String(req.user._id);
+    if (replierId === reporterId) {
+      var allStaff = await User.find({ role: { $in: ['developer', 'admin', 'moderator'] } }).select('_id').lean();
+      var staffIds = allStaff.map(function(s) { return String(s._id); });
+      var ownerMRS = await MemberRole.find({}).lean();
+      ownerMRS.forEach(function(mr) {
+        if (memberDocHasOwner(mr) && !staffIds.includes(String(mr.userId))) staffIds.push(String(mr.userId));
+      });
+      staffIds.forEach(function(uid) {
+        createNotification({ userId: uid, type: 'report_reply', message: actorName + ' replied to a report "' + (report.title || '').slice(0, 60) + '"', link: '' });
+      });
+    } else {
+      await createNotification({ userId: reporterId, type: 'report_reply', message: actorName + ' replied to your report "' + (report.title || '').slice(0, 60) + '"', link: '' });
+    }
     return res.status(201).json({ reply: populated });
   } catch (err) {
     return res.status(500).json({ message: 'Server error' });

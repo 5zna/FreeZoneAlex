@@ -39,6 +39,6 @@ const organizationSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }]
-}, { timestamps: true });
+}, { timestamps: true, toJSON: { transform: function(doc, ret) { if (ret.avatar && ret.avatar.startsWith('data:')) ret.avatar = ''; return ret; } }, toObject: { transform: function(doc, ret) { if (ret.avatar && ret.avatar.startsWith('data:')) ret.avatar = ''; return ret; } } });
 
 export default mongoose.model('Organization', organizationSchema);

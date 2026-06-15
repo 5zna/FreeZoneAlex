@@ -1,7 +1,111 @@
-const blocked = ['badword1', 'badword2'];
+var BAD_WORDS = [
+  'fuck', 'shit', 'ass', 'bitch', 'damn', 'cock', 'dick', 'piss', 'slut', 'whore',
+  'cunt', 'bastard', 'motherfucker', 'nigger', 'nigga', 'faggot', 'crap',
+  ' asshole', 'douche', 'porn', 'sex', 'xxx', '4r5e', '5h1t', 'a55', 'a55hole',
+  'ahole', 'amcik', 'andskota', 'anus', 'ar5e', 'arrse', 'arschloch', 'ash0le',
+  'asholes', 'assfucker', 'asshat', 'assmunch', 'asswipe', 'azzhole', 'b00bs',
+  'b17ch', 'b1tch', 'bitchass', 'bitcher', 'bitchers', 'bitches', 'bitchin',
+  'bitching', 'blowjob', 'boiolas', 'bollock', 'bollok', 'boner', 'boob', 'boobs',
+  'breasts', 'buceta', 'bugger', 'bullshit', 'bum', 'bunnyfucker', 'butt',
+  'buttfucka', 'c0ck', 'c0cksucker', 'carpetmuncher', 'cawk', 'chink', 'cipa',
+  'clit', 'clitoris', 'clits', 'cnut', 'cockface', 'cockhead', 'cockmunch',
+  'cockmuncher', 'cocks', 'cockshit', 'cocksucker', 'coon', 'cox', 'crack',
+  'cracker', 'creampie', 'crotch', 'cum', 'cummer', 'cumshot', 'cunilingus',
+  'cunnie', 'cunnilingus', 'cunts', 'cuntslut', 'cyalis', 'd0ng', 'd0uch3',
+  'd4mn', 'dickbag', 'dickhead', 'dildo', 'dink', 'dinks', 'dirsa', 'dlck',
+  'dogfucker', 'doggin', 'dogging', 'donkeyribber', 'doosh', 'duche', 'dyke',
+  'ejaculate', 'ejaculated', 'ejaculates', 'ejaculating', 'ejaculation', 'ejakulat',
+  'enlargement', 'erection', 'erotic', 'escort', 'esskeetit', 'extacy', 'extasy',
+  'f4nny', 'fag', 'fagging', 'faggitt', 'faggs', 'fagot', 'fagots', 'fags',
+  'fanny', 'fannyflaps', 'fannyfucker', 'fanyy', 'fatass', 'fcuk', 'fcuker',
+  'fcuking', 'fecal', 'feck', 'fecker', 'felch', 'felching', 'fellate', 'fellatio',
+  'feltch', 'femalecum', 'flamer', 'flipping', 'floozy', 'foad', 'fondle',
+  'fook', 'fooker', 'footjob', 'foreskin', 'freex', 'frigger', 'frotting',
+  'fucka', 'fuckass', 'fuckbag', 'fuckboy', 'fuckbuddy', 'fucked', 'fucker',
+  'fuckers', 'fuckface', 'fuckhead', 'fuckher', 'fuckin', 'fucking', 'fuckings',
+  'fuckme', 'fucknut', 'fucknutt', 'fuckoff', 'fucks', 'fucktard', 'fucktoy',
+  'fuckup', 'fuckwad', 'fuckwhit', 'fuckwit', 'fuckz', 'fucl', 'fuq', 'futanari',
+  'g0atse', 'g0ok', 'gangbang', 'gangbanged', 'gangbangs', 'gay', 'gayboy',
+  'gaygirl', 'gays', 'genital', 'genitals', 'getiton', 'gfy', 'ghay', 'ghey',
+  'giantcock', 'goddam', 'goddamn', 'goddamned', 'gokkun', 'goldenshower',
+  'gook', 'groe', 'groid', 'guiena', 'h0m0', 'h0mo', 'handjob', 'hardtards',
+  'he11', 'hentai', 'heroin', 'herpes', 'hiv', 'hoar', 'hoer', 'homerun',
+  'hom0', 'homey', 'homo', 'homosexual', 'hooker', 'hoore', 'hore', 'horniest',
+  'horny', 'hotdamn', 'hotsex', 'hummer', 'humping', 'incest', 'intercourse',
+  'j3rk0ff', 'jackass', 'jackoff', 'jap', 'jerk', 'jerk0ff', 'jerked', 'jerkoff',
+  'jism', 'jiz', 'jizm', 'jizz', 'kawk', 'kike', 'kill', 'killin', 'killing',
+  'kunts', 'kuntz', 'kyke', 'l3i+ch', 'l3itch', 'labia', 'lech', 'lesbian',
+  'lesbo', 'lezz', 'lezzo', 'libido', 'licker', 'lmao', 'lmfao', 'lmfao',
+  'lust', 'lusting', 'm0f0', 'm0fo', 'm45terbate', 'ma5terb8', 'ma5terbate',
+  'mafugly', 'mamasboy', 'masochist', 'master-bate', 'masterb8', 'masterbat',
+  'masterbat3', 'masterbate', 'masterbates', 'masturbat', 'masturbate',
+  'masturbating', 'masturbation', 'mcfagget', 'mickeyfinn', 'milf', 'mkay',
+  'mo-fo', 'mof0', 'mofo', 'mohammed', 'mothafuck', 'mothafucka', 'mothafuckaz',
+  'mothafucked', 'mothafucker', 'mothafuckin', 'mothafucking', 'mothafuckings',
+  'motherfuck', 'motherfucked', 'motherfucker', 'motherfuckin', 'motherfucking',
+  'motherfuckings', 'motherfuckka', 'motherfuckr', 'muff', 'mutha', 'muthafecker',
+  'muthafuckah', 'muthafucker', 'muthafuckker', 'muther', 'mutherfucker',
+  'n1gga', 'n1gger', 'naked', 'nastt', 'nasty', 'nazi', 'nballz', 'nudes',
+  'numbnuts', 'nutsack', 'nympho', 'orgasim', 'orgasm', 'orgasms', 'orgy',
+  'p0rn', 'paki', 'panties', 'panty', 'pawn', 'pecker', 'pedo', 'pedophile',
+  'pecker', 'pen1s', 'penis', 'penises', 'penisfucker', 'pennis', 'perversion',
+  'phuck', 'phuq', 'pimpis', 'pissed', 'pisser', 'pisses', 'pissflaps',
+  'pissin', 'pissing', 'pissoff', 'pisspig', 'playboy', 'pleasure', 'polac',
+  'polack', 'pole', 'polla', 'pollock', 'ponyplay', 'poof', 'poon', 'poontang',
+  'poop', 'porn', 'porno', 'pornography', 'pornos', 'prick', 'pricks', 'pron',
+  'prostitute', 'pube', 'pubes', 'pubic', 'pubis', 'puluke', 'pussy', 'pussies',
+  'pussys', 'puto', 'queaf', 'queef', 'queer', 'queers', 'quickie', 'quim',
+  'r8pe', 'racist', 'rape', 'raped', 'raper', 'raping', 'rapist', 'rearend',
+  'rearentry', 'rectal', 'rectum', 'rectus', 'reefer', 'reetard', 'reich',
+  'retard', 'retarded', 'rimjaw', 'rimming', 's.o.b.', 's0b', 'sadism',
+  'sadist', 'satan', 'scag', 'scank', 'schizo', 'schlong', 'scissoring',
+  'screw', 'screwing', 'scroat', 'scrog', 'scrot', 'scrotum', 'scum',
+  'semen', 'sexy', 'sh!+', 'sh!t', 'sh1t', 'shag', 'shagger', 'shaggin',
+  'shagging', 'shemale', 'shi+', 'shit', 'shite', 'shited', 'shitey',
+  'shitfuck', 'shithead', 'shithole', 'shiting', 'shitings', 'shits',
+  'shitted', 'shitter', 'shitters', 'shitting', 'shittings', 'shitty',
+  'shiz', 'shyt', 'shyte', 'shyty', 'skag', 'skank', 'skeet', 'skullfuck',
+  'slut', 'sluts', 'slutting', 'slutty', 'smegma', 'smut', 'smutty',
+  'snatch', 'sniper', 'sodom', 'sodomize', 'sodomy', 'sonofabitch', 'spac',
+  'spastic', 'sperm', 'spooge', 'spook', 'spunk', 'steamy', 'stfu', 'stiffy',
+  'stoned', 'strap', 'strapon', 'stroking', 'stupid', 'stupidfuck', 'suck',
+  'sucked', 'sucking', 'sucks', 'suicide', 'suka', 'sukker', 'swastika',
+  'swinger', 't1tt1e5', 't1tties', 'taff', 'tawdry', 'teabag', 'teets',
+  'teez', 'terd', 'teste', 'testee', 'testes', 'testicle', 'testicles',
+  'testis', 'thick', 'thickman', 'thickwoman', 'threesome', 'throated',
+  'thrust', 'thrusting', 'thug', 'tits', 'titt', 'titte', 'titties',
+  'titty', 'toke', 'tongue', 'tosser', 'tramp', 'tranny', 'transsexual',
+  'trash', 'tubgirl', 'turdy', 'twat', 'twink', 'twunt', 'twunter',
+  'ugly', 'undies', 'undressing', 'unwed', 'upskirt', 'urinal', 'urine',
+  'uterus', 'uzi', 'v1gra', 'vagina', 'vaginal', 'vibrate', 'vibrator',
+  'vigra', 'vomit', 'vorarephilia', 'voyeur', 'vulva', 'w00se', 'wad',
+  'wang', 'wank', 'wanker', 'wanky', 'whoar', 'whoral', 'whore', 'whorebag',
+  'whored', 'whoreface', 'whorefucker', 'whores', 'whoring', 'willy', 'xrated',
+  'xxx', 'yeasty', 'yiff', 'yiffy', 'zoophile',
+  'عاهرة', 'شرموطة', 'قحبة', 'كلب', 'خرة', 'زبالة', 'منيوك', 'أحا', 'احا',
+  'متناك', 'شرموط', 'عرص', 'خول', 'لوطي', 'قواد', 'ديس', 'كس', 'طيز', 'زب',
+  'نياك', 'مفروض', 'سكس', 'إباحية', 'جنس', 'مص', 'لحس', 'بزاز', 'ثيران',
+  'بهائم', 'منيك', 'خول', 'متناك', 'كواد', 'قحبة', 'يا عبيط', 'يا غبي',
+  'جهل', 'انتحار', 'اغتصاب', 'قتل', 'إرهاب', 'تفجير', 'دمار'
+];
+
+function normalizeText(text) {
+  return text.toLowerCase().replace(/[^a-z0-9\u0600-\u06FF\s]/g, '').replace(/\s+/g, ' ').trim();
+}
 
 export function containsProfanity(text) {
-  if (!text) return false;
-  const lower = text.toLowerCase();
-  return blocked.some(w => lower.includes(w));
+  if (!text || typeof text !== 'string') return false;
+  var normalized = normalizeText(text);
+  var words = normalized.split(' ');
+  for (var i = 0; i < words.length; i++) {
+    for (var j = 0; j < BAD_WORDS.length; j++) {
+      if (words[i] === BAD_WORDS[j]) return true;
+      if (words[i].indexOf(BAD_WORDS[j]) !== -1) return true;
+    }
+  }
+  return false;
+}
+
+export function getBadWords() {
+  return BAD_WORDS;
 }

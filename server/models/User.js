@@ -57,7 +57,7 @@ userSchema.virtual('profileName').get(function() {
   return this.displayName || this.name;
 });
 
-userSchema.set('toJSON', { virtuals: true });
-userSchema.set('toObject', { virtuals: true });
+userSchema.set('toJSON', { virtuals: true, transform: function(doc, ret) { if (ret.avatar && ret.avatar.startsWith('data:')) ret.avatar = ''; return ret; } });
+userSchema.set('toObject', { virtuals: true, transform: function(doc, ret) { if (ret.avatar && ret.avatar.startsWith('data:')) ret.avatar = ''; return ret; } });
 
 export default mongoose.model('User', userSchema);

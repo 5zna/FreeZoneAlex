@@ -1,16 +1,15 @@
 import mongoose from 'mongoose';
 
-const contributorSchema = new mongoose.Schema({
-  name: { type: String, default: '' },
-  role: { type: String, default: '' },
-  link: { type: String, default: '' },
-  avatar: { type: String, default: '' }
+var entrySchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  description: { type: String, default: '' }
 }, { _id: false });
 
-const contributorCategorySchema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true },
-  order: { type: Number, default: 0 },
-  contributors: { type: [contributorSchema], default: [] }
+var contributorCategorySchema = new mongoose.Schema({
+  name: { type: String, required: true, trim: true },
+  icon: { type: String, default: '' },
+  entries: [entrySchema],
+  order: { type: Number, default: 0 }
 }, { timestamps: true });
 
 export default mongoose.model('ContributorCategory', contributorCategorySchema);

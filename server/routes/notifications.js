@@ -1,9 +1,10 @@
 import { Router } from 'express';
-import auth from '../server/middleware/auth.js';
-import Notification from '../server/models/Notification.js';
+import auth from '../middleware/auth.js';
+import Notification from '../models/Notification.js';
 
 const router = Router();
 
+/* GET /notifications - get current user's notifications */
 router.get('/notifications', auth, async (req, res) => {
   try {
     const { unreadOnly } = req.query;
@@ -16,7 +17,8 @@ router.get('/notifications', auth, async (req, res) => {
   }
 });
 
-router.get('/notifications/unread/count', auth, async (req, res) => {
+/* GET /notifications/unread-count */
+router.get('/notifications/unread-count', auth, async (req, res) => {
   try {
     const count = await Notification.countDocuments({ userId: req.userId, read: false });
     res.json({ count });
@@ -25,6 +27,7 @@ router.get('/notifications/unread/count', auth, async (req, res) => {
   }
 });
 
+/* PUT /notifications/:id/read - mark single as read */
 router.put('/notifications/:id/read', auth, async (req, res) => {
   try {
     const notif = await Notification.findOneAndUpdate(
@@ -39,6 +42,7 @@ router.put('/notifications/:id/read', auth, async (req, res) => {
   }
 });
 
+/* PUT /notifications/read-all - mark all as read */
 router.put('/notifications/read-all', auth, async (req, res) => {
   try {
     await Notification.updateMany({ userId: req.userId, read: false }, { read: true });
@@ -48,6 +52,7 @@ router.put('/notifications/read-all', auth, async (req, res) => {
   }
 });
 
+/* DELETE /notifications/:id - delete a notification */
 router.delete('/notifications/:id', auth, async (req, res) => {
   try {
     const notif = await Notification.findOneAndDelete({ _id: req.params.id, userId: req.userId });
@@ -60,6 +65,7 @@ router.delete('/notifications/:id', auth, async (req, res) => {
 
 export default router;
 
+/* Helper to create a notification (used by other route files) */
 export async function createNotification({ userId, type, message, link = '' }) {
   try {
     return await Notification.create({ userId, type, message, link });
