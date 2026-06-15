@@ -6,6 +6,7 @@ import auth from '../middleware/auth.js';
 import { createNotification } from './notifications.js';
 import { containsProfanity } from '../utils/profanityFilter.js';
 import { uploadAvatar, uploadToCloudinary } from '../middleware/upload.js';
+import { cacheGet, clearCache } from '../utils/cache.js';
 
 const router = Router();
 
@@ -34,7 +35,7 @@ router.get('/organizations/public/:id', async (req, res) => {
 
 router.get('/organizations', auth, async (req, res) => {
   try {
-    const orgs = await Organization.find({}).populate('owner', 'name displayName email').populate('members', 'name displayName email');
+    var orgs = await cacheGet('organizations', 30000, () => Organization.find({}).populate('owner', 'name displayName email').populate('members', 'name displayName email'));
     res.json({ organizations: orgs });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -79,6 +80,7 @@ router.post('/organizations', auth, async (req, res) => {
     }
     const org = await Organization.create(orgData);
     const populated = await org.populate('owner', 'name displayName email');
+    clearCache('organizations');
     res.status(201).json({ organization: populated });
   } catch {
     res.status(500).json({ message: 'Server error' });
@@ -127,6 +129,7 @@ router.put('/organizations/:id', auth, async (req, res) => {
       org.username = u;
     }
     await org.save();
+    clearCache('organizations');
     const populated = await org.populate('owner', 'name displayName email');
     res.json({ organization: populated });
   } catch {
@@ -151,6 +154,7 @@ router.post('/organizations/:id/avatar', auth, async (req, res) => {
         { avatar: url },
         { new: true }
       ).populate('owner', 'name displayName email');
+      clearCache('organizations');
       res.json({ organization: org });
     } catch {
       res.status(500).json({ message: 'Server error' });
@@ -166,6 +170,7 @@ router.delete('/organizations/:id', auth, async (req, res) => {
       return res.status(403).json({ message: 'Only the owner or an admin can delete' });
     }
     await org.deleteOne();
+    clearCache('organizations');
     res.json({ message: 'Deleted' });
   } catch {
     res.status(500).json({ message: 'Server error' });

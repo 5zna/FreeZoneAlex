@@ -7,6 +7,7 @@ import {
   ensureRolesArray,
   findOwnerMemberRole
 } from '../utils/memberRoleUtils.js';
+import { cacheGet, clearCache } from '../utils/cache.js';
 
 const router = Router();
 
@@ -23,7 +24,7 @@ async function requireAdmin(req, res, next) {
 /* GET /member-roles - all users' assigned roles */
 router.get('/member-roles', auth, requireAdmin, async (req, res) => {
   try {
-    const docs = await MemberRole.find().lean();
+    const docs = await cacheGet('member-roles', 30000, () => MemberRole.find().lean());
     const map = {};
     docs.forEach(doc => {
       map[doc.userId] = normalizeMemberRoles(doc);
@@ -56,6 +57,7 @@ router.put('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
       }
       doc.roles.push({ roleName, roleIcon: roleIcon || '' });
       await doc.save();
+      clearCache('member-roles');
       return res.json({ roles: normalizeMemberRoles(doc) });
     }
 
@@ -63,6 +65,7 @@ router.put('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
       userId: req.params.userId,
       roles: [{ roleName, roleIcon: roleIcon || '' }]
     });
+    clearCache('member-roles');
     res.json({ roles: normalizeMemberRoles(doc) });
   } catch {
     res.status(500).json({ message: 'Server error' });
@@ -96,6 +99,7 @@ router.delete('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
         return res.status(403).json({ message: 'Only developer or the Owner themselves can remove Owner role' });
       }
       await doc.deleteOne();
+      clearCache('member-roles');
       return res.json({ roles: [] });
     }
 
@@ -109,9 +113,11 @@ router.delete('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
     doc.roles = doc.roles.filter(r => r.roleName !== roleName);
     if (doc.roles.length === 0) {
       await doc.deleteOne();
+      clearCache('member-roles');
       return res.json({ roles: [] });
     }
     await doc.save();
+    clearCache('member-roles');
     res.json({ roles: normalizeMemberRoles(doc) });
   } catch {
     res.status(500).json({ message: 'Server error' });

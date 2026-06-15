@@ -4,6 +4,7 @@ import BannedIP from '../models/BannedIP.js';
 import MemberRole from '../models/MemberRole.js';
 import CustomRole from '../models/CustomRole.js';
 import { memberDocHasOwner, normalizeMemberRoles } from '../utils/memberRoleUtils.js';
+import { cacheGet, clearCache } from '../utils/cache.js';
 import auth from '../middleware/auth.js';
 import { createNotification } from './notifications.js';
 import { join, dirname } from 'path';
@@ -94,7 +95,7 @@ router.post('/claim-dev', auth, async (req, res) => {
 
 router.get('/admin/users', auth, requireDashboard, async (req, res) => {
   try {
-    const users = await User.find().sort({ createdAt: -1 });
+    const users = await cacheGet('admin/users', 30000, () => User.find().sort({ createdAt: -1 }));
     res.json({ users });
   } catch {
     res.status(500).json({ message: 'Server error' });
