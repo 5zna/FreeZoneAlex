@@ -21,17 +21,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
   protectDashboard();
 
-  initJobHandler();
   initModalHandler();
-  initInquiryHandler();
-  initSupportHandler();
-  initAnimationHandler();
-  initProfileHandler();
-  initDevHandler();
-  initPostJobHandler();
-  initNotificationHandler();
-  initContributorHandler();
-  initNewsTickerHandler();
+
+  const scheduleDeferredInit = (fn) => {
+    const run = () => {
+      try {
+        fn();
+      } catch {}
+    };
+
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(run, { timeout: 1200 });
+    } else {
+      window.setTimeout(run, 0);
+    }
+  };
+
+  scheduleDeferredInit(() => {
+    initAnimationHandler();
+    initProfileHandler();
+    initDevHandler();
+    initPostJobHandler();
+    initNotificationHandler();
+    initContributorHandler();
+    initNewsTickerHandler();
+    initJobHandler();
+    initInquiryHandler();
+    initSupportHandler();
+  });
+
   if (window.location.pathname.match(/\/dashboard(\/|$|\.html)/)) {
     import('./handlers/dashboardPage.js').then(function(mod) {
       return mod.initDashboardPage();
