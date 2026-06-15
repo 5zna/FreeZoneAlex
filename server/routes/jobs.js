@@ -8,14 +8,14 @@ import { memberDocHasOwner } from '../utils/memberRoleUtils.js';
 import { createAuditLog, actorSnapshot } from '../utils/auditLog.js';
 
 function isAdmin(req) {
-  return req.user && (req.user.role === 'admin' || req.user.role === 'developer');
+  return req.user && (req.user.role === 'admin' || req.user.role === 'developer' || req.user.role === 'owner');
 }
 function isStaffByRole(req) {
-  return req.user && (req.user.role === 'admin' || req.user.role === 'developer' || req.user.role === 'moderator');
+  return req.user && (req.user.role === 'admin' || req.user.role === 'developer' || req.user.role === 'moderator' || req.user.role === 'owner');
 }
 async function isStaff(req) {
   if (!req.user) return false;
-  if (req.user.role === 'admin' || req.user.role === 'developer' || req.user.role === 'moderator') return true;
+  if (req.user.role === 'admin' || req.user.role === 'developer' || req.user.role === 'moderator' || req.user.role === 'owner') return true;
   try {
     const mr = await MemberRole.findOne({ userId: req.user._id }).lean();
     if (memberDocHasOwner(mr)) return true;

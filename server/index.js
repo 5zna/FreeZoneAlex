@@ -227,7 +227,7 @@ app.use('/api', auditLogRoutes);
 app.get('/api/auth/check-dashboard', async (req, res) => {
   if (!req.isAuthenticated()) return res.status(403).json({ authorized: false, message: 'Dashboard access denied' });
   var role = req.user.role;
-  var authorized = role === 'admin' || role === 'developer' || role === 'moderator';
+  var authorized = role === 'admin' || role === 'developer' || role === 'moderator' || role === 'owner';
   if (!authorized) {
     try {
       var mr = await MemberRole.findOne({ userId: req.user._id.toString() }).lean();

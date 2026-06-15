@@ -3,7 +3,7 @@ import { fetchOrgs, getCachedOrgs, getOrgsForUser } from './orgHandler.js';
 import { getCurrentLanguage, getTranslation, translateStaticContent } from './translationHandler.js';
 
 function getHeaderRoleBadge(role, lang) {
-  if (currentUserIsOwner) return ' ' + OWNER_CROWN_GLOBAL;
+  if (currentUserIsOwner || role === 'owner') return ' ' + OWNER_CROWN_GLOBAL;
   if (!role || role === 'user') return '';
   
   let label = '';
@@ -22,7 +22,7 @@ function getHeaderRoleBadge(role, lang) {
 }
 
 function getTranslatedHeaderRoleBadge(role, lang) {
-  if (currentUserIsOwner) return ' ' + OWNER_CROWN_GLOBAL;
+  if (currentUserIsOwner || role === 'owner') return ' ' + OWNER_CROWN_GLOBAL;
   if (!role || role === 'user') return '';
   const roleKeys = {
     developer: 'badge_developer',
@@ -75,7 +75,7 @@ export function getCurrentUser() {
 }
 
 export function isAdmin() {
-  return user && (user.role === 'admin' || user.role === 'developer' || currentUserIsOwner);
+  return user && (user.role === 'admin' || user.role === 'developer' || user.role === 'owner' || currentUserIsOwner);
 }
 
 export function isDeveloper() {
@@ -85,7 +85,7 @@ export function isDeveloper() {
 export function updateDashboardBtn() {
   var btn = document.getElementById('auth-dashboard-btn');
   if (!btn) return;
-  var show = isDeveloper() || currentUserIsOwner || (user && (user.role === 'admin' || user.role === 'moderator')) || currentUserHasAnyRole;
+  var show = isDeveloper() || currentUserIsOwner || (user && (user.role === 'admin' || user.role === 'moderator' || user.role === 'owner')) || currentUserHasAnyRole;
   btn.style.display = show ? '' : 'none';
 }
 

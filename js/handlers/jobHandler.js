@@ -661,7 +661,7 @@ async function openAuthorProfile(job) {
     var _uName = authorUser.username || '';
     var badgeHtmls = [];
 
-    // 1. Database roles (developer, admin, moderator)
+    // 1. Database roles (developer, admin, moderator, owner)
     if (r === 'developer') {
       var label = lang === 'ar' ? 'مطور' : 'Developer';
       badgeHtmls.push('<span class="dashboard-role-badge developer" style="font-size:0.75rem"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="vertical-align:middle;margin-right:3px"><path d="M12 2L3 7v6c0 5.25 3.83 10.15 9 11.5 5.17-1.35 9-6.25 9-11.5V7l-9-5z"/></svg>' + label + '</span>');
@@ -671,6 +671,9 @@ async function openAuthorProfile(job) {
     } else if (r === 'moderator') {
       var label = lang === 'ar' ? 'مشرف' : 'Moderator';
       badgeHtmls.push('<span class="dashboard-role-badge moderator" style="font-size:0.75rem"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="vertical-align:middle;margin-right:3px"><path d="M20 7h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v3H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zM10 4h4v3h-4V4zm10 16H4V9h16v11z"/></svg>' + label + '</span>');
+    } else if (r === 'owner') {
+      var label = lang === 'ar' ? 'مالك' : 'Owner';
+      badgeHtmls.push('<span class="dashboard-role-badge owner" style="font-size:0.75rem"><svg width="12" height="12" viewBox="0 0 24 24" fill="#fbbf24" stroke="none" style="vertical-align:middle;margin-right:3px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' + label + '</span>');
     }
 
     // 2. Member roles (owner, custom roles)

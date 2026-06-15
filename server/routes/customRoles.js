@@ -9,7 +9,7 @@ const router = Router();
 
 async function requireAdmin(req, res, next) {
   if (!req.user) return res.status(403).json({ message: 'Admin or developer access required' });
-  if (req.user.role === 'admin' || req.user.role === 'developer') return next();
+  if (['admin', 'developer', 'owner'].includes(req.user.role)) return next();
   try {
     const mr = await MemberRole.findOne({ userId: req.user._id }).lean();
     if (memberDocHasOwner(mr)) return next();

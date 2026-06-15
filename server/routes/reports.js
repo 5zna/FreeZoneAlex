@@ -12,7 +12,7 @@ var router = express.Router();
 
 async function isStaff(req) {
   if (!req.user) return false;
-  if (req.user.role === 'developer' || req.user.role === 'admin' || req.user.role === 'moderator') return true;
+  if (req.user.role === 'developer' || req.user.role === 'admin' || req.user.role === 'moderator' || req.user.role === 'owner') return true;
   try {
     var mr = await MemberRole.findOne({ userId: req.user._id }).lean();
     return memberDocHasOwner(mr);
@@ -20,7 +20,7 @@ async function isStaff(req) {
 }
 
 function isStaffRole(role) {
-  return ['developer', 'admin', 'moderator'].includes(role);
+  return ['developer', 'admin', 'moderator', 'owner'].includes(role);
 }
 
 async function attachReplyStaffFlags(replies) {

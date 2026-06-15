@@ -12,7 +12,7 @@ import { uploadToCloudinary } from '../utils/cloudinary.js';
 const router = Router();
 
 function isAdmin(req) {
-  return req.user && (req.user.role === 'admin' || req.user.role === 'developer');
+  return req.user && (req.user.role === 'admin' || req.user.role === 'developer' || req.user.role === 'owner');
 }
 
 router.get('/organizations/verified', async (req, res) => {

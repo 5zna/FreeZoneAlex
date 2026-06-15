@@ -36,7 +36,7 @@ function publicSettings(s) {
 
 async function canManageSettings(user, permissionName) {
   if (!user) return false;
-  if (user.role === 'admin' || user.role === 'developer') return true;
+  if (user.role === 'admin' || user.role === 'developer' || user.role === 'owner') return true;
   var mr = await MemberRole.findOne({ userId: user._id }).lean();
   if (memberDocHasOwner(mr)) return true;
   if (!permissionName) return false;
