@@ -72,9 +72,13 @@ router.put('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
     await doc.save();
     
     // Update user base role if this is a system rank
+    // Handle @owner special prefix case
+    let actualRole = roleName;
+    if (roleName === '@owner') actualRole = 'owner';
+    
     const systemRanks = ['owner', 'admin', 'moderator', 'developer'];
-    if (systemRanks.includes(roleName)) {
-      await User.findByIdAndUpdate(req.params.userId, { role: roleName }, { new: true });
+    if (systemRanks.includes(actualRole)) {
+      await User.findByIdAndUpdate(req.params.userId, { role: actualRole }, { new: true });
     }
     
     await createAuditLog({ category: 'staff', type: 'member_role_add', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Added member role', targetType: 'member-role', targetId: String(req.params.userId), details: roleName });
@@ -87,9 +91,13 @@ router.put('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
     });
     
     // Update user base role if this is a system rank
+    // Handle @owner special prefix case
+    let actualRole = roleName;
+    if (roleName === '@owner') actualRole = 'owner';
+    
     const systemRanks = ['owner', 'admin', 'moderator', 'developer'];
-    if (systemRanks.includes(roleName)) {
-      await User.findByIdAndUpdate(req.params.userId, { role: roleName }, { new: true });
+    if (systemRanks.includes(actualRole)) {
+      await User.findByIdAndUpdate(req.params.userId, { role: actualRole }, { new: true });
     }
     
     await createAuditLog({ category: 'staff', type: 'member_role_add', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Added member role', targetType: 'member-role', targetId: String(req.params.userId), details: roleName });
@@ -158,7 +166,9 @@ router.delete('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
     
     // If we removed the current user role, find highest remaining system rank or fallback to user
     const remainingRoles = normalizeMemberRoles(doc).map(r => r.name);
-    const remainingSystemRanks = remainingRoles.filter(r => systemRanks.includes(r));
+    // Map @owner to plain owner for system rank check
+    const normalizedRemaining = remainingRoles.map(r => r === '@owner' ? 'owner' : r);
+    const remainingSystemRanks = normalizedRemaining.filter(r => systemRanks.includes(r));
     
     if (remainingSystemRanks.length > 0) {
       // Priority order: owner > developer > admin > moderator
