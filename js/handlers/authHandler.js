@@ -260,15 +260,31 @@ async function fetchUser() {
     
     if (!res.ok || !data) throw new Error('Not authenticated');
     user = data.user;
-    try {
-      const mr = await fetch(API_BASE_URL + '/member-roles/me', { credentials: 'include' });
-      if (mr.ok) {
+
+    const rolesPromise = fetch(API_BASE_URL + '/member-roles/me', { credentials: 'include' })
+      .then(async (mr) => {
+        if (!mr.ok) return null;
         const mrData = await mr.json();
-        const roles = mrData.roles || (mrData.role ? [mrData.role] : []);
+        return mrData.roles || (mrData.role ? [mrData.role] : []);
+      })
+      .catch(() => null);
+
+    const orgsPromise = fetchOrgs().catch(() => []);
+
+    try {
+      const roles = await rolesPromise;
+      if (Array.isArray(roles)) {
         currentUserIsOwner = roles.some(r => r && r.name && r.name.charAt(0) === '@');
         currentUserHasAnyRole = roles.length > 0;
+      } else {
+        currentUserIsOwner = false;
+        currentUserHasAnyRole = false;
       }
-    } catch { currentUserIsOwner = false; currentUserHasAnyRole = false; }
+    } catch {
+      currentUserIsOwner = false;
+      currentUserHasAnyRole = false;
+    }
+
     if (!wasLoggedIn) {
       wasLoggedIn = true;
       const p = new URLSearchParams(window.location.search);
@@ -284,7 +300,7 @@ async function fetchUser() {
       }
     }
     activeIdentity = loadActiveIdentity();
-    await fetchOrgs();
+    await orgsPromise;
     if (activeIdentity && activeIdentity.type === 'organization') {
       const serverOrgs = getCachedOrgs();
       const exists = serverOrgs.some(o => o._id === activeIdentity.id);

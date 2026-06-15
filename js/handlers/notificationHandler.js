@@ -187,7 +187,12 @@ export function initNotificationHandler() {
   }
 
   if (getCurrentUser()) {
-    fetchUnreadCount();
+    const loadInitialCount = () => fetchUnreadCount();
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(loadInitialCount, { timeout: 2000 });
+    } else {
+      window.setTimeout(loadInitialCount, 500);
+    }
   }
   let pollInterval = setInterval(() => {
     if (document.hidden) return;
