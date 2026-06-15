@@ -87,6 +87,18 @@ function buildUserSelect(container, users, selectedId, onChange) {
 
 function loadCachedUsers() { try { return JSON.parse(localStorage.getItem('dashCachedUsers') || '[]'); } catch { return []; } }
 
+function getUserDisplayName(user) {
+  if (!user) return '';
+  const baseName = user.displayName || user.name || '';
+  if (user.username) return baseName ? `${baseName} (@${user.username})` : `@${user.username}`;
+  return baseName || user.email || 'Unknown';
+}
+
+function getUserSecondaryLabel(user) {
+  if (!user) return '';
+  return user.username ? `@${user.username}` : (user.email || '');
+}
+
 function renderMemberSelectChips(containerId, select) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -98,7 +110,7 @@ function renderMemberSelectChips(containerId, select) {
     return;
   }
   container.innerHTML = selectedUsers.map(u => {
-    const name = u.displayName || u.name || u.email || '';
+    const name = getUserDisplayName(u);
     const av = u.avatar;
     const avUrl = av ? (av.startsWith('http') || av.startsWith('data:') ? av : BACKEND_ORIGIN + av) : null;
     const img = avUrl ? '<img src="' + avUrl + '" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--bg-glass)">' : '<div class="user-select-avatar-placeholder" style="width:20px;height:20px;font-size:0.65rem">' + name.charAt(0).toUpperCase() + '</div>';
@@ -108,7 +120,6 @@ function renderMemberSelectChips(containerId, select) {
 
 export async function initDashboardPage() {
   if (!document.querySelector('.dash-page')) return;
-  localStorage.removeItem('dashStaffActions');
   await Promise.all([fetchOrgs(), loadMemberRoles(), loadCustomRoles()]);
 
   /* Capture orgs snapshot immediately (before fetchUser's background fetchOrgs can reset cachedOrgs) */
@@ -756,7 +767,7 @@ function saveNewsSettings() {
     var saveBtn = document.getElementById('dash-news-save');
     if (saveBtn) saveBtn.classList.add('dash-btn-outline');
     window.dispatchEvent(new CustomEvent('newsTickerUpdated', { detail: { news: _dashboardNews } }));
-    addLog('settings', 'Updated news ticker');
+    postAuditLog({ category: 'staff', type: 'settings_update', actionType: 'news', message: 'Updated news ticker', details: 'News items changed' });
     showToast('News saved');
   }).catch(function() {
     showToast('Failed to save news');
@@ -810,7 +821,7 @@ function openVisualEditor(pageName) {
         const key = 'pageContent_' + pageName;
         localStorage.setItem(key, el.innerHTML);
         showSavedText(saveBtn, 'Saved!');
-        addLog('content', 'Edited /' + pageName + ' via visual editor');
+        postAuditLog({ category: 'staff', type: 'content_edit', actionType: 'content', message: 'Edited /' + pageName + ' via visual editor', details: 'Saved page content: ' + pageName });
       } catch {}
     };
   }
@@ -1009,49 +1020,33 @@ function setupLogs() {
   const searchInput = document.getElementById('dash-logs-search');
   if (!container) return;
 
-  const render = () => {
-    let logs = getLogs();
-    const q = searchInput ? searchInput.value.toLowerCase() : '';
-    if (q) logs = logs.filter(l => l.user && l.user.toLowerCase().includes(q));
-
+  const render = async () => {
+    const q = searchInput ? searchInput.value.trim() : '';
     const activeFilter = document.querySelector('.dash-log-filter-btn.active');
     const filter = activeFilter ? activeFilter.dataset.filter : 'all';
-    if (filter !== 'all') logs = logs.filter(l => l.type === filter);
-
-    if (logs.length === 0) {
-      container.innerHTML = '<div class="dash-empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><p>No activity yet.</p></div>';
-      return;
+    try {
+      const res = await fetch(API_BASE_URL + '/audit-logs?category=activity&limit=200&q=' + encodeURIComponent(q), { credentials: 'include' });
+      const data = res.ok ? await res.json() : { logs: [] };
+      let logs = data.logs || [];
+      if (filter !== 'all') logs = logs.filter(l => l.type === filter || l.actionType === filter);
+      if (logs.length === 0) {
+        container.innerHTML = '<div class="dash-empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><p>No activity yet.</p></div>';
+        return;
+      }
+      container.innerHTML = logs.map(function(log, i) {
+        return '<div class="dash-log-item" data-index="' + i + '">'
+          + '<div class="dash-log-icon ' + (log.type || '') + '">' + '<i class="fas fa-clipboard"></i>' + '</div>'
+          + '<div class="dash-log-content">'
+          + '<div class="dash-log-text">' + escapeHtml(log.message || '') + '</div>'
+          + '<div class="dash-log-meta">' + new Date(log.createdAt).toLocaleString() + ' &middot; ' + escapeHtml(log.actorName || 'System') + (log.actorRole ? ' &middot; ' + escapeHtml(log.actorRole) : '') + '</div>'
+          + (log.details ? '<div class="dash-log-detail" id="log-detail-' + i + '">' + escapeHtml(log.details) + '</div>' : '')
+          + '</div>'
+          + (log.details ? '<div class="dash-log-expand" data-index="' + i + '"><i class="fas fa-chevron-down"></i></div>' : '')
+          + '</div>';
+      }).join('');
+    } catch {
+      container.innerHTML = '<div class="dash-empty-state"><p>Failed to load activity logs</p></div>';
     }
-
-    container.innerHTML = logs.map((log, i) => `
-      <div class="dash-log-item" data-index="${i}">
-        <div class="dash-log-icon ${log.type}">${log.icon || '<i class="fas fa-clipboard"></i>'}</div>
-        <div class="dash-log-content">
-          <div class="dash-log-text">${log.text}</div>
-          <div class="dash-log-meta">${log.time} ${log.user ? '&middot; ' + log.user : ''}</div>
-          ${log.detail ? `<div class="dash-log-detail" id="log-detail-${i}">${log.detail}</div>` : ''}
-        </div>
-        ${log.detail ? `<div class="dash-log-expand" data-index="${i}"><i class="fas fa-chevron-down"></i></div>` : ''}
-      </div>
-    `).join('');
-
-    container.querySelectorAll('.dash-log-item').forEach(item => {
-      item.addEventListener('click', (e) => {
-        if (e.target.closest('.dash-log-expand')) return;
-        const idx = item.dataset.index;
-        const detail = document.getElementById('log-detail-' + idx);
-        const expand = item.querySelector('.dash-log-expand');
-        if (detail) { detail.classList.toggle('open'); if (expand) expand.classList.toggle('open'); }
-      });
-    });
-    container.querySelectorAll('.dash-log-expand').forEach(el => {
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const idx = el.dataset.index;
-        const detail = document.getElementById('log-detail-' + idx);
-        if (detail) { detail.classList.toggle('open'); el.classList.toggle('open'); }
-      });
-    });
   };
 
   if (searchInput) searchInput.addEventListener('input', render);
@@ -1066,27 +1061,15 @@ function setupLogs() {
   render();
 }
 
-function getLogs() {
-  try { return JSON.parse(localStorage.getItem('dashActivityLogs') || '[]'); } catch { return []; }
-}
-
-function addLog(type, text, opts = {}) {
-  const logs = getLogs();
-  logs.unshift({
-    type,
-    text,
-    user: opts.user || '',
-    time: new Date().toLocaleString(),
-    detail: opts.detail || '',
-    icon: opts.icon || getDefaultIcon(type)
-  });
-  if (logs.length > 200) logs.length = 200;
-  localStorage.setItem('dashActivityLogs', JSON.stringify(logs));
-}
-
-function getDefaultIcon(type) {
-  const icons = { profile: '<i class="fas fa-user"></i>', settings: '<i class="fas fa-cog"></i>', content: '<i class="fas fa-pen"></i>', action: '<i class="fas fa-shield-alt"></i>' };
-  return icons[type] || '<i class="fas fa-clipboard"></i>';
+async function postAuditLog(payload) {
+  try {
+    await fetch(API_BASE_URL + '/audit-logs', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch {}
 }
 
 /* ===================== ACTIONS ===================== */
@@ -1098,47 +1081,31 @@ function setupActions() {
   const searchInput = document.getElementById('dash-actions-search');
   if (!container) return;
 
-  const render = () => {
-    let actions = getActions();
-    const q = searchInput ? searchInput.value.toLowerCase() : '';
-    if (q) actions = actions.filter(a => a.user && a.user.toLowerCase().includes(q));
-
-    if (actions.length === 0) {
-      container.innerHTML = '<div class="dash-empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><p>No staff actions recorded.</p></div>';
-      return;
+  const render = async () => {
+    const q = searchInput ? searchInput.value.trim() : '';
+    try {
+      const res = await fetch(API_BASE_URL + '/audit-logs?category=staff&limit=200&q=' + encodeURIComponent(q), { credentials: 'include' });
+      const data = res.ok ? await res.json() : { logs: [] };
+      const actions = data.logs || [];
+      if (actions.length === 0) {
+        container.innerHTML = '<div class="dash-empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><p>No staff actions recorded.</p></div>';
+        return;
+      }
+      container.innerHTML = actions.map(function(a) {
+        return '<div class="dash-action-item">'
+          + '<div class="dash-log-icon action-' + (a.actionType || a.type || 'action') + '"><i class="fas fa-shield-alt"></i></div>'
+          + '<div class="dash-log-content">'
+          + '<div class="dash-log-text"><span class="dash-action-type ' + (a.actionType || '') + '">' + escapeHtml(a.actionType || a.type || 'action') + '</span> ' + escapeHtml(a.message || '') + '</div>'
+          + '<div class="dash-log-meta">' + new Date(a.createdAt).toLocaleString() + ' &middot; by ' + escapeHtml(a.actorName || 'System') + (a.targetName ? ' &middot; ' + escapeHtml(a.targetName) : '') + '</div>'
+          + '</div></div>';
+      }).join('');
+    } catch {
+      container.innerHTML = '<div class="dash-empty-state"><p>Failed to load staff actions</p></div>';
     }
-
-    container.innerHTML = actions.map(a => `
-      <div class="dash-action-item">
-        <div class="dash-log-icon action-${a.actionType}">${a.icon || '<i class="fas fa-shield-alt"></i>'}</div>
-        <div class="dash-log-content">
-          <div class="dash-log-text"><span class="dash-action-type ${a.actionType}">${a.actionType}</span> ${a.text}</div>
-          <div class="dash-log-meta">${a.time} &middot; by ${a.staff} &middot; ${a.user}</div>
-        </div>
-      </div>
-    `).join('');
   };
 
   if (searchInput) searchInput.addEventListener('input', render);
   render();
-}
-
-function getActions() {
-  try { return JSON.parse(localStorage.getItem('dashStaffActions') || '[]'); } catch { return []; }
-}
-
-function addAction(actionType, text, opts = {}) {
-  const actions = getActions();
-  actions.unshift({
-    actionType,
-    text,
-    staff: opts.staff || 'Unknown',
-    user: opts.user || '',
-    time: new Date().toLocaleString(),
-    icon: opts.icon || '<i class="fas fa-shield-alt"></i>'
-  });
-  if (actions.length > 100) actions.length = 100;
-  localStorage.setItem('dashStaffActions', JSON.stringify(actions));
 }
 
 let memberRoles = {};
@@ -1330,7 +1297,7 @@ async function handleMemberAction(btn) {
       fetch(API_BASE_URL + '/admin/users/' + userId + '/verify', { method: 'PUT', credentials: 'include' })
         .then(function(res) { return res.ok ? res.json() : Promise.reject(); })
         .then(function(data) {
-          addAction('verify', (data.user.verified ? 'Verified' : 'Unverified') + ' ' + userName, { staff: 'You', user: userName });
+          postAuditLog({ category: 'staff', type: 'user_verify', actionType: 'verify', message: (data.user.verified ? 'Verified' : 'Unverified') + ' ' + userName, targetType: 'user', targetId: data.user._id, targetName: userName });
           showSavedText(document.querySelector('.dash-card-title:last-child'), (data.user.verified ? 'Verified' : 'Unverified') + ' ' + userName);
           loadMembers();
         })
@@ -1343,7 +1310,7 @@ async function handleMemberAction(btn) {
     if (!targetId) return;
     if (!confirm('Set "' + userName + '" as the Owner?')) return;
     await addMemberRoleServer(targetId, '@' + userName, '');
-    addAction('set-owner', 'Set ' + userName + ' as Owner', { staff: 'You', user: userName });
+    postAuditLog({ category: 'staff', type: 'member_role_add', actionType: 'set-owner', message: 'Set ' + userName + ' as Owner', targetType: 'user', targetId: targetId, targetName: userName });
     showSavedText(document.querySelector('.dash-card-title:last-child'), 'Owner set to ' + userName);
     await loadMembers();
     window.dispatchEvent(new CustomEvent('identityChanged'));
@@ -1358,7 +1325,7 @@ async function handleMemberAction(btn) {
     var ownerRole = getMemberRolesForUser(currentOwnerId).find(function(r) { return r.name && r.name.charAt(0) === '@'; });
     if (ownerRole) await removeMemberRole(currentOwnerId, ownerRole.name);
     await addMemberRoleServer(targetId, '@' + userName, '');
-    addAction('transfer-owner', 'Transferred ownership to ' + userName, { staff: 'You', user: userName });
+    postAuditLog({ category: 'staff', type: 'owner_transfer', actionType: 'transfer-owner', message: 'Transferred ownership to ' + userName, targetType: 'user', targetId: targetId, targetName: userName });
     showSavedText(document.querySelector('.dash-card-title:last-child'), 'Owner changed to ' + userName);
     await loadMembers();
     window.dispatchEvent(new CustomEvent('identityChanged'));
@@ -1379,7 +1346,7 @@ async function handleMemberAction(btn) {
     })
     .then(function(res) {
       if (!res.ok) throw new Error('Failed to change role');
-      addAction(action, action.replace('-', ' ') + ' for ' + userName, { staff: 'You', user: userName });
+      postAuditLog({ category: 'staff', type: action, actionType: action, message: action.replace('-', ' ') + ' for ' + userName, targetType: 'user', targetId: userId, targetName: userName });
       showSavedText(document.querySelector('.dash-card-title:last-child'), 'Role updated for ' + userName);
       loadMembers();
     })
@@ -1396,7 +1363,7 @@ async function handleMemberAction(btn) {
     fetch(API_BASE_URL + '/admin/users/' + userId, { method: 'DELETE', credentials: 'include' })
       .then(function(res) {
         if (!res.ok) throw new Error('Delete failed');
-        addAction('delete-account', 'Deleted ' + userName, { staff: 'You', user: userName });
+        postAuditLog({ category: 'staff', type: 'delete-account', actionType: 'delete-account', message: 'Deleted ' + userName, targetType: 'user', targetId: userId, targetName: userName });
         showSavedText(document.querySelector('.dash-card-title:last-child'), 'Deleted ' + userName);
         loadMembers();
       })
@@ -1449,7 +1416,7 @@ async function handleMemberAction(btn) {
       .catch(function() { showSavedText(document.querySelector('.dash-card-title:last-child'), 'Remove suspend failed'); });
     return;
   }
-  addAction(action, action + ' ' + userName, { staff: 'You', user: userName });
+  postAuditLog({ category: 'staff', type: action, actionType: action, message: action + ' ' + userName, targetType: 'user', targetId: btn.dataset.userId || '', targetName: userName });
   var actionsContainer = document.getElementById('dash-actions-list');
   if (actionsContainer) setupActions();
   showSavedText(document.querySelector('.dash-card-title:last-child'), action + ' recorded');
@@ -1480,7 +1447,12 @@ async function loadMembers() {
 
   const render = () => {
     const q = searchInput ? searchInput.value.toLowerCase() : '';
-    const filtered = q ? users.filter(u => (u.displayName || u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q)) : users;
+    const filtered = q ? users.filter(u => {
+      const primary = (u.displayName || u.name || '').toLowerCase();
+      const username = (u.username || '').toLowerCase();
+      const email = (u.email || '').toLowerCase();
+      return primary.includes(q) || username.includes(q) || email.includes(q);
+    }) : users;
 
     if (filtered.length === 0) {
       tbody.innerHTML = '';
@@ -1529,13 +1501,14 @@ async function loadMembers() {
         if (!_oid) actionsHtml += '<button data-action="set-owner" data-user-id="' + u._id + '" data-user-name="' + name + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="#fbbf24" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> ' + t('dash_member_set_owner') + '</button>';
       }
 
+      const secondaryLabel = getUserSecondaryLabel(u);
       return `<tr>
-        <td><div class="dashboard-user-cell"><div class="dashboard-user-avatar">${avatarHtml}</div><div class="dashboard-user-info"><div class="dashboard-user-name">${name}${userHasOwnerRole(u._id) ? ' ' + OWNER_CROWN_GLOBAL : isVerified ? ' ' + VERIFIED_TICK : ''}${statusBadges.length ? ' ' + statusBadges.join(' ') : ''}</div><div class="dashboard-user-email">${u.email || ''}</div></div></div></td>
+        <td><div class="dashboard-user-cell"><div class="dashboard-user-avatar">${avatarHtml}</div><div class="dashboard-user-info"><div class="dashboard-user-name">${name}${userHasOwnerRole(u._id) ? ' ' + OWNER_CROWN_GLOBAL : isVerified ? ' ' + VERIFIED_TICK : ''}${statusBadges.length ? ' ' + statusBadges.join(' ') : ''}</div><div class="dashboard-user-email">${secondaryLabel}</div></div></div></td>
         <td>${buildRoleCell(u._id, u.role, name)}</td>
         <td>${new Date(u.createdAt).toLocaleDateString()}</td>
         <td><span class="dash-members-lastseen">${lastSeen ? new Date(lastSeen).toLocaleDateString() : '-'}</span></td>
         <td>
-          <button class="dash-eye-btn dash-view-profile" data-user='${JSON.stringify({ id: u._id, name, email: u.email, role: u.role, avatar: u.avatar, username: u.username, displayName: u.displayName, about: u.about, banned: u.banned, timedOutUntil: u.timedOutUntil, verified: u.verified })}' data-actions='${encodeURIComponent(actionsHtml)}' title="${t('dash_member_view_profile')}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          <button class="dash-eye-btn dash-view-profile" data-user='${JSON.stringify({ id: u._id, name, secondaryLabel, role: u.role, avatar: u.avatar, username: u.username, displayName: u.displayName, about: u.about, banned: u.banned, timedOutUntil: u.timedOutUntil, verified: u.verified })}' data-actions='${encodeURIComponent(actionsHtml)}' title="${t('dash_member_view_profile')}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
           ${actionsHtml ? `
           <div class="dash-member-actions-wrap">
             <button class="dash-member-actions-btn" title="${t('common_actions')}">&#x2026;</button>
@@ -1668,7 +1641,7 @@ function setupMiscToggles() {
       maintReason.classList.toggle('hidden', !val);
       var reasonText = val ? (maintInput ? maintInput.value : '') : '';
       saveMiscSetting('maintenance', val, 'maintenanceReason', reasonText);
-      addLog('settings', 'Maintenance ' + (val ? 'enabled' : 'disabled'));
+      postAuditLog({ category: 'staff', type: 'settings_update', actionType: 'settings', message: 'Maintenance ' + (val ? 'enabled' : 'disabled') });
     });
   }
 
@@ -1690,7 +1663,7 @@ function setupMiscToggles() {
       attackReason.classList.toggle('hidden', !val);
       var reasonText = val ? (attackInput ? attackInput.value : '') : '';
       saveMiscSetting('alert', val, 'alert', reasonText);
-      addLog('settings', 'Attack alert ' + (val ? 'enabled' : 'disabled'));
+      postAuditLog({ category: 'staff', type: 'settings_update', actionType: 'settings', message: 'Attack alert ' + (val ? 'enabled' : 'disabled') });
     });
   }
 
@@ -1815,7 +1788,7 @@ function setupOrgCreateModal() {
           successEl.style.display = 'block';
           if (orgListRefreshCallback) orgListRefreshCallback(orgs);
           window.dispatchEvent(new CustomEvent('identityChanged'));
-          addLog('settings', 'Created organization: ' + name);
+          postAuditLog({ category: 'staff', type: 'organization_create', actionType: 'organization', message: 'Created organization: ' + name, targetType: 'organization', targetId: org._id, targetName: name });
           setTimeout(() => {
             successEl.style.display = 'none';
             close();
@@ -1825,7 +1798,7 @@ function setupOrgCreateModal() {
           close();
           if (orgListRefreshCallback) orgListRefreshCallback(orgs);
           showSavedText(doneBtn, 'Created!');
-          addLog('settings', 'Created organization: ' + name);
+          postAuditLog({ category: 'staff', type: 'organization_create', actionType: 'organization', message: 'Created organization: ' + name, targetType: 'organization', targetId: org._id, targetName: name });
           window.dispatchEvent(new CustomEvent('identityChanged'));
           doneBtn.disabled = false; doneBtn.textContent = 'Create';
         }
@@ -1906,7 +1879,7 @@ function setupOrgEditorModal() {
       }
       closeOrgEditor();
       showSavedText(saveBtn, 'Saved!');
-      addLog('settings', 'Saved organization');
+      postAuditLog({ category: 'staff', type: 'organization_update', actionType: 'organization', message: 'Saved organization', targetType: 'organization', targetId: existing._id, targetName: existing.name });
       window.dispatchEvent(new CustomEvent('identityChanged'));
     });
   }
@@ -1927,7 +1900,7 @@ function setupOrgEditorModal() {
         return;
       }
       closeOrgEditor();
-      addLog('settings', 'Deleted organization');
+      postAuditLog({ category: 'staff', type: 'organization_delete', actionType: 'organization', message: 'Deleted organization', targetType: 'organization', targetId: existing._id, targetName: existing.name });
       window.dispatchEvent(new CustomEvent('identityChanged'));
     });
   }
@@ -2094,7 +2067,7 @@ async function setupOrganizations(initialOrgs) {
         const id = (typeof m === 'object' ? m._id : m) || '';
         const users = loadCachedUsers();
         const found = users.find(u => u._id === id);
-        const displayName = found ? (found.displayName || found.name || found.email || id) : id;
+        const displayName = found ? getUserDisplayName(found) : id;
         const av = found ? found.avatar : null;
         const avUrl = av ? (av.startsWith('http') || av.startsWith('data:') ? av : BACKEND_ORIGIN + av) : null;
         const img = avUrl ? '<img src="' + avUrl + '" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--bg-glass);margin-left:6px">' : '<div class="user-select-avatar-placeholder" style="width:20px;height:20px;font-size:0.65rem;display:inline-flex;margin-left:6px">' + displayName.charAt(0).toUpperCase() + '</div>';
@@ -2126,7 +2099,7 @@ async function setupOrganizations(initialOrgs) {
       select.innerHTML = '<option disabled>No available users</option>';
       return;
     }
-    select.innerHTML = filtered.map(u => '<option value="' + u._id + '">' + (u.displayName || u.name || u.email) + ' (@' + (u.username || '') + ')</option>').join('');
+    select.innerHTML = filtered.map(u => '<option value="' + u._id + '">' + getUserDisplayName(u) + '</option>').join('');
     // show avatars for selected users
     renderMemberSelectChips('dash-org-member-chips', select);
     select.addEventListener('change', () => renderMemberSelectChips('dash-org-member-chips', select));
@@ -2190,6 +2163,7 @@ function openProfilePreview(btn) {
   var actionsRaw = btn.dataset.actions ? decodeURIComponent(btn.dataset.actions) : '';
   var avatarSrc = u.avatar || '';
   var displayName = u.displayName || u.name;
+  var secondaryLabel = u.secondaryLabel || (u.username ? '@' + u.username : (u.email || ''));
   var roleLabel = lang === 'ar'
     ? (u.role === 'admin' ? 'ادمن' : u.role === 'developer' ? 'مطور' : u.role === 'moderator' ? 'مشرف' : 'عضو')
     : (u.role === 'admin' ? 'Admin' : u.role === 'developer' ? 'Developer' : u.role === 'moderator' ? 'Moderator' : 'Member');
@@ -2203,9 +2177,8 @@ function openProfilePreview(btn) {
     + (avatarSrc ? '<img src="' + avatarSrc + '" style="width:100%;height:100%;object-fit:cover" onerror="this.remove()">' : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:var(--text-muted);font-weight:600">' + displayName.charAt(0).toUpperCase() + '</div>')
     + '</div>'
     + '<div style="font-size:1.1rem;font-weight:700;margin-bottom:4px">' + displayName + (tick ? ' ' + tick : '') + '</div>'
-    + '<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:4px">@' + (u.username || u.name) + '</div>'
+    + '<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:4px">' + secondaryLabel + '</div>'
     + '<span class="dashboard-role-badge ' + badgeClass + '" style="margin-top:4px;font-size:0.75rem">' + badgeLabel + '</span>'
-    + (u.email ? '<div style="font-size:0.8rem;color:var(--text-muted);margin-top:8px">' + u.email + '</div>' : '')
     + '<p style="margin-top:12px;color:var(--text-secondary);font-size:0.85rem;line-height:1.5">' + aboutText + '</p>'
     + '</div>';
   if (actionsRaw && actionsWrap && actionsPopup) {

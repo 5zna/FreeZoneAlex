@@ -190,8 +190,15 @@ export function initNotificationHandler() {
     fetchUnreadCount();
   }
   let pollInterval = setInterval(() => {
+    if (document.hidden) return;
     if (getCurrentUser()) fetchUnreadCount();
   }, 30000);
+
+  window.addEventListener('visibilitychange', () => {
+    if (!document.hidden && getCurrentUser()) {
+      fetchUnreadCount();
+    }
+  });
 
   window.addEventListener('identityChanged', () => {
     if (getCurrentUser()) {

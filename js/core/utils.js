@@ -67,7 +67,7 @@ export function lockBodyScroll(lock) {
   }
 }
 
-const BACKEND_ORIGIN = 'http://127.0.0.1:4000';
+const BACKEND_ORIGIN = window.location.origin;
 
 function resolveUrl(avatar) {
   if (!avatar) return '';
@@ -262,10 +262,6 @@ function appendReply(reply) {
   }
   var isAr = document.documentElement.getAttribute('lang') === 'ar';
   var u = reply.userId || {};
-  var isSupportStaff = !!reply.isStaffReply || ['developer', 'admin', 'moderator'].includes(u.role);
-  if (isSupportStaff && isOwner && u.role !== 'developer' && u.role !== 'admin' && u.role !== 'moderator') {
-    isSupportStaff = true;
-  }
   var avatarUrl = u.avatar;
   if (avatarUrl && !avatarUrl.startsWith('http') && !avatarUrl.startsWith('data:')) {
     avatarUrl = BACKEND_ORIGIN + avatarUrl;
@@ -273,7 +269,17 @@ function appendReply(reply) {
   var avatarHtml = avatarUrl
     ? '<img src="' + avatarUrl.replace(/'/g, "\\'") + '" style="width:30px;height:30px;border-radius:50%;object-fit:cover">'
     : '<span style="display:inline-flex;width:30px;height:30px;border-radius:50%;background:var(--bg-glass);align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;flex-shrink:0">' + escapeHtml((u.name || '?').charAt(0).toUpperCase()) + '</span>';
-  var roleBadge = isSupportStaff ? '<span class="dashboard-role-badge support" style="font-size:0.65rem;padding:1px 6px;margin-inline-start:6px;background:var(--badge-admin-bg);color:var(--badge-admin-text);border-color:rgba(37,99,235,0.15)">' + (isAr ? 'الدعم الفنى' : 'Technical Support') + '</span>' : '';
+  var roleBadge = '';
+  var role = u.role || '';
+  if (role === 'developer') {
+    roleBadge = '<span class="dashboard-role-badge developer" style="font-size:0.65rem;padding:1px 6px;margin-inline-start:6px;vertical-align:middle">' + (isAr ? 'مطور' : 'DEV') + '</span>';
+  } else if (role === 'admin') {
+    roleBadge = '<span class="dashboard-role-badge admin" style="font-size:0.65rem;padding:1px 6px;margin-inline-start:6px;vertical-align:middle">' + (isAr ? 'ادمن' : 'ADMIN') + '</span>';
+  } else if (role === 'moderator') {
+    roleBadge = '<span class="dashboard-role-badge moderator" style="font-size:0.65rem;padding:1px 6px;margin-inline-start:6px;vertical-align:middle">' + (isAr ? 'مشرف' : 'MOD') + '</span>';
+  } else if (!!reply.isStaffReply) {
+    roleBadge = '<span class="dashboard-role-badge owner" style="font-size:0.65rem;padding:1px 6px;margin-inline-start:6px;vertical-align:middle">' + (isAr ? 'مالك' : 'Owner') + '</span>';
+  }
 
   var div = document.createElement('div');
   div.style.cssText = 'display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-color)';

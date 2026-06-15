@@ -61,18 +61,19 @@ router.put('/profile', auth, async (req, res) => {
 });
 
 router.post('/profile/avatar', auth, (req, res) => {
-  uploadAvatar(req, res, (err) => {
+  uploadAvatar(req, res, async (err) => {
     if (err) return res.status(400).json({ message: err.message || 'Upload failed' });
     if (!req.file) return res.status(400).json({ message: 'No file provided' });
 
-    res.json({ message: 'Avatar accepted' });
-
-    uploadToCloudinary(req.file.buffer, 'avatars')
-      .then(avatarUrl => User.findByIdAndUpdate(req.userId, { avatar: avatarUrl }, { new: true }))
-      .then(user => {
-        if (user) createAuditLog({ category: 'activity', type: 'profile_avatar', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Changed profile avatar', targetType: 'profile', targetId: String(req.userId), targetName: user?.displayName || user?.name || '' });
-      })
-      .catch(err => console.error('[Cloudinary] User avatar upload error:', err));
+    try {
+      var avatarUrl = await uploadToCloudinary(req.file.buffer, 'avatars');
+      var user = await User.findByIdAndUpdate(req.userId, { avatar: avatarUrl }, { new: true });
+      await createAuditLog({ category: 'activity', type: 'profile_avatar', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Changed profile avatar', targetType: 'profile', targetId: String(req.userId), targetName: user?.displayName || user?.name || '' });
+      res.json({ user });
+    } catch (err) {
+      console.error('[Cloudinary] User avatar upload error:', err);
+      res.status(500).json({ message: 'Upload failed' });
+    }
   });
 });
 

@@ -163,16 +163,17 @@ router.post('/organizations/:id/avatar', auth, (req, res) => {
         return res.status(403).json({ message: 'Only the owner or an admin can change the avatar' });
       }
 
-      res.json({ message: 'Avatar accepted' });
-
-      uploadToCloudinary(req.file.buffer, 'org_avatars')
-        .then(avatarUrl => Organization.findByIdAndUpdate(req.params.id, { avatar: avatarUrl }, { new: true }).populate('owner', 'name displayName email'))
-        .then(orgUpdated => {
-          if (orgUpdated) createAuditLog({ category: 'staff', type: 'organization_avatar', actionType: 'organization', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Updated organization avatar', targetType: 'organization', targetId: String(orgUpdated._id), targetName: orgUpdated.name });
-        })
-        .catch(err => console.error('[Cloudinary] Org avatar upload error:', err));
-    } catch {
-      res.status(500).json({ message: 'Server error' });
+      var avatarUrl = await uploadToCloudinary(req.file.buffer, 'org_avatars');
+      org = await Organization.findByIdAndUpdate(
+        req.params.id,
+        { avatar: avatarUrl },
+        { new: true }
+      ).populate('owner', 'name displayName email');
+      await createAuditLog({ category: 'staff', type: 'organization_avatar', actionType: 'organization', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Updated organization avatar', targetType: 'organization', targetId: String(org._id), targetName: org.name });
+      res.json({ organization: org });
+    } catch (err) {
+      console.error('[Cloudinary] Org avatar upload error:', err);
+      res.status(500).json({ message: 'Upload failed' });
     }
   });
 });
