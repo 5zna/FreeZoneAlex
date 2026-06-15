@@ -179,6 +179,7 @@ async function openDashboardModal() {
         <td>
           <select class="dashboard-role-select" data-user-id="${u._id}">
             <option value="user" ${u.role === 'user' ? 'selected' : ''}>User</option>
+            <option value="owner" ${u.role === 'owner' ? 'selected' : ''}>Owner</option>
             <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
             <option value="developer" ${u.role === 'developer' ? 'selected' : ''}>Developer</option>
           </select>

@@ -107,7 +107,7 @@ router.get('/admin/users', auth, requireDashboard, async (req, res) => {
 router.put('/admin/users/:id/role', auth, requireAdmin, async (req, res) => {
   try {
     const { role } = req.body;
-    if (!['user', 'moderator', 'admin', 'developer'].includes(role)) {
+    if (!['user', 'moderator', 'admin', 'developer', 'owner'].includes(role)) {
       return res.status(400).json({ message: 'Invalid role' });
     }
     
@@ -132,6 +132,30 @@ router.put('/admin/users/:id/role', auth, requireAdmin, async (req, res) => {
       { new: true }
     );
     if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Sync the @owner MemberRole tag when setting/removing owner role
+    if (role === 'owner') {
+      var mrDoc = await MemberRole.findOne({ userId: user._id });
+      if (mrDoc) {
+        var hasOwnerTag = mrDoc.roles && mrDoc.roles.some(function(r) { return r.roleName === '@owner'; });
+        if (!hasOwnerTag) {
+          mrDoc.roles.push({ roleName: '@owner', roleIcon: '' });
+          await mrDoc.save();
+        }
+      } else {
+        await MemberRole.create({ userId: user._id, roles: [{ roleName: '@owner', roleIcon: '' }] });
+      }
+    } else if (target.role === 'owner' || target.role === 'Owner') {
+      var mrDoc = await MemberRole.findOne({ userId: user._id });
+      if (mrDoc && mrDoc.roles) {
+        mrDoc.roles = mrDoc.roles.filter(function(r) { return r.roleName !== '@owner'; });
+        if (mrDoc.roles.length === 0) {
+          await mrDoc.deleteOne();
+        } else {
+          await mrDoc.save();
+        }
+      }
+    }
     const adminRank = req.user.role === 'developer' ? 'Developer' : 'Admin';
     await createNotification({ userId: user._id, type: 'role_change', message: `${adminRank} ${req.user.username} changed your role to ${role}`, link: '/dashboard' });
     await createAuditLog({ category: 'staff', type: 'user_role_change', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: `Changed role to ${role}`, targetType: 'user', targetId: String(user._id), targetName: user.username || user.name, details: role });

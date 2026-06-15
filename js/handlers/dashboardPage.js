@@ -1309,7 +1309,7 @@ async function handleMemberAction(btn) {
     var targetId = btn.dataset.userId;
     if (!targetId) return;
     if (!confirm('Set "' + userName + '" as the Owner?')) return;
-    await addMemberRoleServer(targetId, '@' + userName, '');
+    await addMemberRoleServer(targetId, '@owner', '');
     postAuditLog({ category: 'staff', type: 'member_role_add', actionType: 'set-owner', message: 'Set ' + userName + ' as Owner', targetType: 'user', targetId: targetId, targetName: userName });
     showSavedText(document.querySelector('.dash-card-title:last-child'), 'Owner set to ' + userName);
     await loadMembers();
@@ -1324,7 +1324,7 @@ async function handleMemberAction(btn) {
     if (!confirm('Transfer ownership to "' + userName + '"? The current owner will lose the Owner role.')) return;
     var ownerRole = getMemberRolesForUser(currentOwnerId).find(function(r) { return r.name && r.name.charAt(0) === '@'; });
     if (ownerRole) await removeMemberRole(currentOwnerId, ownerRole.name);
-    await addMemberRoleServer(targetId, '@' + userName, '');
+    await addMemberRoleServer(targetId, '@owner', '');
     postAuditLog({ category: 'staff', type: 'owner_transfer', actionType: 'transfer-owner', message: 'Transferred ownership to ' + userName, targetType: 'user', targetId: targetId, targetName: userName });
     showSavedText(document.querySelector('.dash-card-title:last-child'), 'Owner changed to ' + userName);
     await loadMembers();
