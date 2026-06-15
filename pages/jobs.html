@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة الوظائف | المنطقة الحرة بالإسكندرية</title>
+  <meta name="description" content="تصفح أحدث فرص العمل في الإسكندرية والمنطقة الحرة">
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/animations.css">
+  <link rel="stylesheet" href="../css/components/navbar.css">
+  <link rel="stylesheet" href="../css/components/filters.css">
+  <link rel="stylesheet" href="../css/components/job-card.css">
+  <link rel="stylesheet" href="../css/components/modal.css">
+  <link rel="stylesheet" href="../css/components/auth.css">
+  <link rel="stylesheet" href="../css/components/footer.css">
+  <link rel="stylesheet" href="../css/components/profile.css">
+  <link rel="stylesheet" href="../css/components/dashboard.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <header class="navbar" role="banner">
+    <div class="container nav-container">
+      <a href="/home" class="nav-logo" aria-label="الصفحة الرئيسية">
+        <span data-i18n="nav_logo">المنطقة الحرة</span>
+      </a>
+      <nav aria-label="الملاحة الرئيسية">
+        <ul class="nav-menu" id="nav-menu">
+          <li class="nav-item"><a href="/home" data-i18n="nav_home">الرئيسية</a></li>
+          <li class="nav-item nav-item-dropdown active">
+            <a data-i18n="nav_jobs_cat">الوظائف</a>
+            <ul class="nav-dropdown">
+              <li><a href="/jobs" data-i18n="nav_jobs">وظائف الشركات</a></li>
+              <li><a href="/member-jobs" data-i18n="nav_jobs_member">وظائف الأعضاء</a></li>
+            </ul>
+          </li>
+          <li class="nav-item nav-item-dropdown">
+            <a data-i18n="nav_about_cat">عن الموقع</a>
+            <ul class="nav-dropdown">
+              <li><a href="/about" data-i18n="nav_about_us">عن المنصة</a></li>
+              <li><a href="/contributors" data-i18n="nav_contributors">المساهمون</a></li>
+              <li><a href="/social" data-i18n="nav_social">مواقع التواصل</a></li>
+            </ul>
+          </li>
+          <li class="nav-item nav-item-dropdown">
+            <a data-i18n="nav_support_cat">الدعم</a>
+            <ul class="nav-dropdown">
+              <li><a href="/inquiries" data-i18n="nav_inquiries">مكتب الاستفسارات</a></li>
+              <li><a href="/support" data-i18n="nav_support">الدعم الفنى</a></li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <div class="nav-actions">
+        <button class="nav-toggle-btn lang-toggle" title="English" aria-label="Toggle Language"><svg width="20" height="14" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="40" fill="#CE1126"/><rect y="13.33" width="60" height="13.33" fill="#fff"/><rect y="26.66" width="60" height="13.34" fill="#000"/></svg></button>
+        <button class="nav-toggle-btn theme-toggle" title="Switch to Light Mode" aria-label="Toggle Theme"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button>
+        <div class="notif-wrapper">
+          <button class="nav-toggle-btn notif-bell" id="notif-bell" title="Notifications" aria-label="Notifications">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span class="notif-badge" style="display:none">0</span>
+          </button>
+          <div class="notif-dropdown" id="notif-dropdown">
+            <div class="notif-dropdown-header">
+              <span class="notif-title"><span class="notif-count">0</span> <span data-i18n="notif_title">Notifications</span></span>
+              <button class="notif-mark-all"><span data-i18n="notif_mark_all">Mark all read</span></button>
+            </div>
+            <div class="notif-list"></div>
+            <div class="notif-empty" style="display:none"><span data-i18n="notif_empty">No notifications</span></div>
+          </div>
+        </div>
+        <button class="nav-toggle-btn auth-trigger auth-guest" data-tab="login" title="Login / Register" aria-label="Login">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </button>
+        <div class="auth-user-wrapper auth-user hidden">
+          <button class="auth-user-btn" id="auth-user-menu-btn">
+            <span class="auth-user-avatar" id="auth-user-avatar">U</span>
+            <span class="auth-user-btn-inner">
+              <span class="auth-user-name" id="auth-user-name">User</span>
+              <span class="auth-current-label" id="auth-current-label" data-i18n="auth_account_label">Account</span>
+            </span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="auth-user-dropdown" id="auth-user-dropdown">
+            <button class="auth-dropdown-item" id="auth-edit-profile-btn" data-i18n="dropdown_edit_profile">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Edit Profile
+            </button>
+            <button class="auth-dropdown-item" id="auth-switch-identity-btn" data-i18n="dropdown_switch_account">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7h11M14 12h5M8 17h11M5 6l-2 2 2 2M5 14l-2 2 2 2"/></svg>
+              Switch Account
+            </button>
+            <button class="auth-dropdown-item" id="auth-dashboard-btn" style="display:none" data-i18n="dropdown_dashboard">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+              Dashboard
+            </button>
+            <div class="auth-dropdown-divider"></div>
+            <button class="auth-dropdown-item logout" id="auth-logout-btn" data-i18n="dropdown_logout">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              Logout
+            </button>
+          </div>
+        </div>
+        <div class="auth-switcher-overlay" id="auth-switcher-overlay">
+          <div class="auth-switcher-backdrop" id="auth-switcher-backdrop"></div>
+          <div class="auth-switcher-panel">
+            <div class="auth-switcher-header">
+              <span class="auth-switcher-title" data-i18n="dropdown_switch_account">Switch Account</span>
+              <button class="auth-switcher-close" id="auth-switcher-close">&times;</button>
+            </div>
+            <div class="auth-switcher-body" id="auth-switcher-body"></div>
+          </div>
+        </div>
+        <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle Menu" type="button">&#x2630;</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- NEWS TICKER -->
+  <div class="news-ticker">
+    <div class="news-ticker-track">
+      <div class="news-ticker-item">✅ تم تحديث لوحة الوظائف بنجاح</div>
+      <div class="news-ticker-item">🔥 وظائف جديدة لصالح شركة مصر للبترول</div>
+      <div class="news-ticker-item">📢 تم فتح باب التسجيل لدورة تدريبية مجانية</div>
+      <div class="news-ticker-item">⚡ تحسينات جديدة في نظام البحث عن الوظائف</div>
+    </div>
+  </div>
+
+  <main class="container page-section" id="main-content">
+    <div class="section-header reveal-element" style="margin-bottom:32px">
+      <h1 class="section-title" data-i18n="jobs_title">الوظائف النشطة في الإسكندرية</h1>
+      <p class="section-subtitle" data-i18n="jobs_subtitle">فرص عمل حقيقية من منشورات الجروب ومسؤولي توظيف موثوقين. بدون رسوم.</p>
+    </div>
+
+    <div class="glass-panel filter-panel reveal-element">
+      <div class="search-bar-enhanced" role="search">
+        <span class="search-bar-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </span>
+        <input type="text" id="job-search" class="search-bar-input" data-i18n-placeholder="filter_search_placeholder" placeholder="ابحث عن وظائف بالمسمى، الشركة، المهارات..." autocomplete="off">
+        <button class="search-bar-clear" id="search-clear" aria-label="Clear search" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+        <button class="search-bar-submit" id="search-submit" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <span data-i18n="search_btn">بحث</span>
+        </button>
+
+      </div>
+      <div class="filter-grid" id="filter-grid">
+        <div class="filter-group">
+          <label for="filter-location" class="filter-label" data-i18n="filter_location_label">المنطقة</label>
+          <div class="filter-select-wrapper"><select id="filter-location" class="filter-select">
+            <option value="all" data-i18n="filter_location_all">كل مناطق الإسكندرية</option>
+            <option value="freezone" data-i18n="filter_location_freezone">المنطقة الحرة / العامرية</option>
+            <option value="smouha" data-i18n="filter_location_smouha">سموحة</option>
+            <option value="mansheya" data-i18n="filter_location_mansheya">المنشية</option>
+            <option value="sidi_gaber" data-i18n="filter_location_sidi_gaber">سيدي جابر</option>
+            <option value="loran" data-i18n="filter_location_loran">لوران / شرق</option>
+            <option value="agamy" data-i18n="filter_location_agamy">العجمي / غرب</option>
+          </select></div>
+        </div>
+        <div class="filter-group">
+          <label for="filter-hours" class="filter-label" data-i18n="filter_hours_label">الشفت</label>
+          <div class="filter-select-wrapper"><select id="filter-hours" class="filter-select">
+            <option value="all" data-i18n="filter_hours_all">كل أنواع الشفتات</option>
+            <option value="full" data-i18n="filter_hours_full">دوام كامل</option>
+            <option value="part" data-i18n="filter_hours_part">دوام جزئي</option>
+            <option value="shift" data-i18n="filter_hours_shift">شفتات 8-9 ساعات</option>
+            <option value="rotational" data-i18n="filter_hours_rotational">شفتات متغيرة</option>
+          </select></div>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" style="opacity:0">&#160;</label>
+          <button class="btn btn-secondary" onclick="document.getElementById('job-search').value='';document.getElementById('filter-location').value='all';document.getElementById('filter-hours').value='all';document.querySelector('.category-pill[data-category=all]')?.click();" style="width:100%">
+            <span>&#x1F504;</span> <span data-i18n="filter_reset">إعادة ضبط</span>
+          </button>
+        </div>
+      </div>
+      <div class="category-pills-container" id="filter-pills">
+        <button class="category-pill active" data-category="all" data-i18n="filter_cat_all">جميع التخصصات</button>
+        <button class="category-pill" data-category="callcenter" data-i18n="filter_cat_callcenter">خدمة عملاء</button>
+        <button class="category-pill" data-category="manufacturing" data-i18n="filter_cat_manufacturing">صناعة / مصانع</button>
+        <button class="category-pill" data-category="retail" data-i18n="filter_cat_retail">تجزئة</button>
+        <button class="category-pill" data-category="sales" data-i18n="filter_cat_sales">مبيعات</button>
+        <button class="category-pill" data-category="admin" data-i18n="filter_cat_admin">إدارة</button>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;margin:16px 0 0">
+      <button id="post-job-btn" class="btn btn-primary" data-i18n="jobs_post_btn">نشر وظيفة</button>
+    </div>
+
+    <div class="jobs-grid reveal-element" id="jobs-grid" style="transition-delay:0.1s"></div>
+
+    <div style="text-align:center;margin-top:32px">
+      <button id="load-more" class="btn btn-secondary hidden" type="button">
+        <span>&#x1F447;</span> <span data-i18n="filter_cat_all">عرض المزيد</span>
+      </button>
+    </div>
+  </main>
+
+  <div class="modal-overlay" id="modal-overlay" aria-modal="true" role="dialog">
+    <div class="modal-container">
+      <div class="modal-top-actions">
+        <div class="dash-member-actions-wrap" id="author-actions-wrap" style="display:none">
+          <button class="dash-member-actions-btn" id="author-actions-btn" style="width:44px;height:44px;border-radius:50%;border:1px solid var(--border-color);background:var(--bg-glass);color:var(--text-primary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem" title="Actions">&#x2026;</button>
+          <div class="dash-member-actions-popup" id="author-actions-popup"></div>
+        </div>
+        <button class="modal-close-btn" aria-label="Close details" type="button" style="position:static">&#x2715;</button>
+      </div>
+      <div class="modal-header">
+        <h3 class="modal-title">Job Title</h3>
+        <div class="modal-company">Company Name</div>
+      </div>
+      <div class="modal-body"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="contact-modal" aria-modal="true" role="dialog" style="z-index:400">
+    <div class="modal-container" style="max-width:400px">
+      <button class="modal-close-btn contact-modal-close" aria-label="Close" type="button">&#x2715;</button>
+      <div class="modal-header">
+        <h3 class="modal-title" data-i18n="contact_modal_title">Contact Info</h3>
+        <div class="modal-company" style="display:none"></div>
+      </div>
+      <div class="modal-body" id="contact-modal-body"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="post-job-modal" aria-modal="true" role="dialog" style="z-index:300">
+    <div class="modal-container" style="max-width:520px">
+      <button class="modal-close-btn post-job-close" aria-label="Close" type="button">&#x2715;</button>
+      <div class="modal-header" style="padding:20px 24px 12px">
+        <h3 class="modal-title" style="font-size:1.1rem" data-i18n="jobs_post_title">نشر فرصة عمل</h3>
+        <div class="modal-company" style="font-size:0.8rem" data-i18n="jobs_post_subtitle">انشر وظيفة جديدة للمجتمع</div>
+      </div>
+
+      <!-- Step Indicator -->
+      <div class="post-step-indicator" id="post-step-indicator">
+        <div class="post-step active" data-step="1"><span class="post-step-num">1</span><span class="post-step-label" data-i18n="jobs_step1">Basic Info</span></div>
+        <div class="post-step-connector"></div>
+        <div class="post-step" data-step="2"><span class="post-step-num">2</span><span class="post-step-label" data-i18n="jobs_step2">Contact &amp; Details</span></div>
+        <div class="post-step-connector"></div>
+        <div class="post-step" data-step="3"><span class="post-step-num">3</span><span class="post-step-label" data-i18n="jobs_step3">Tags &amp; Submit</span></div>
+      </div>
+
+      <div class="modal-body" style="padding:12px 24px 20px">
+        <div id="post-job-identity" style="display:none"></div>
+
+        <form id="post-job-form" novalidate style="display:flex;flex-direction:column;gap:10px">
+
+          <!-- STEP 1: Basic Info -->
+          <div class="post-step-content" data-step="1">
+            <div class="dash-field-group">
+              <label class="dash-field-label" data-i18n="jobs_post_title_field">Job Title</label>
+              <input type="text" id="post-job-title" class="dash-field-input" placeholder="e.g. Customer Service Rep">
+            </div>
+            <div class="dash-field-group">
+              <label class="dash-field-label" data-i18n="filter_location_label">Location</label>
+              <input type="text" id="post-job-location" class="dash-field-input" placeholder="e.g. Free Zone / Amreya">
+            </div>
+            <div class="dash-field-group">
+              <label class="dash-field-label" data-i18n="filter_hours_label">Working Hours</label>
+              <div style="display:flex;gap:8px">
+                <div style="flex:1">
+                  <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:2px">From</div>
+                  <input type="text" id="post-job-hours-from" class="dash-field-input" placeholder="09:00" style="text-align:center;padding:12px 4px;cursor:text;font-size:1rem">
+                </div>
+                <div style="flex:1">
+                  <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:2px">To</div>
+                  <input type="text" id="post-job-hours-to" class="dash-field-input" placeholder="17:00" style="text-align:center;padding:12px 4px;cursor:text;font-size:1rem">
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary post-step-next" style="width:100%;margin-top:4px;padding:10px" data-i18n="jobs_step_next">Next →</button>
+          </div>
+
+          <!-- STEP 2: Contact & Details -->
+          <div class="post-step-content" data-step="2" style="display:none">
+            <div class="dash-field-group">
+              <label class="dash-field-label" data-i18n="jobs_post_salary">Salary</label>
+              <input type="text" id="post-job-salary" class="dash-field-input" placeholder="e.g. 7000-9000 EGP">
+            </div>
+            <div class="dash-field-group">
+              <div style="font-size:0.85rem;font-weight:600;margin-bottom:6px;color:var(--text-muted)" data-i18n="jobs_post_contact">Contact Info</div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <input type="email" id="post-job-contact-email" class="dash-field-input" placeholder="Email">
+                <input type="tel" id="post-job-contact-phone" class="dash-field-input" placeholder="Phone Number">
+                <input type="tel" id="post-job-contact-landline" class="dash-field-input" placeholder="Landline Number">
+                <input type="url" id="post-job-contact-website" class="dash-field-input" placeholder="Website">
+              </div>
+            </div>
+            <div class="dash-field-group">
+              <label class="dash-field-label" data-i18n="jobs_post_details">Details</label>
+              <textarea id="post-job-details" class="dash-field-input" rows="2" placeholder="Optional additional info" style="resize:none"></textarea>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:4px">
+              <button type="button" class="btn btn-secondary post-step-prev" style="flex:1;padding:10px" data-i18n="jobs_step_prev">← Back</button>
+              <button type="button" class="btn btn-primary post-step-next" style="flex:2;padding:10px" data-i18n="jobs_step_next">Next →</button>
+            </div>
+          </div>
+
+          <!-- STEP 3: Tags & Submit -->
+          <div class="post-step-content" data-step="3" style="display:none">
+            <div class="dash-field-group">
+              <label class="dash-field-label">Facebook Group Post Link</label>
+              <input type="url" id="post-job-fb-link" class="dash-field-input" placeholder="https://www.facebook.com/groups/...">
+            </div>
+            <div class="dash-field-group">
+              <label class="dash-field-label" data-i18n="job_tags_label">Tags</label>
+              <div class="post-tag-input-wrap" id="post-tag-input-wrap">
+                <div class="post-tag-list" id="post-tag-list"></div>
+                <input type="text" id="post-tag-input" placeholder="Type a tag and press Enter..." data-i18n="jobs_tags_placeholder">
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:4px">
+              <button type="button" class="btn btn-secondary post-step-prev" style="flex:1;padding:10px" data-i18n="jobs_step_prev">← Back</button>
+              <button type="submit" class="btn btn-primary" style="flex:2;padding:10px" data-i18n="jobs_post_submit">Post Job</button>
+            </div>
+          </div>
+
+          <div id="post-job-success" style="display:none;padding:10px;background:var(--color-success-fade, rgba(40,167,69,0.1));border-radius:var(--radius-sm);text-align:center;font-size:0.85rem;color:var(--color-success)" data-i18n="jobs_post_success">تم نشر وظيفتك بنجاح!</div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <button id="scroll-top-btn" class="scroll-top-btn" aria-label="العودة للأعلى" type="button">&#x2B06;&#xFE0F;</button>
+
+  <footer class="footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-bottom">
+        <div class="footer-copy" data-i18n="footer_copyright">&#169; ٢٠٢٦ المنطقة الحرة بالإسكندرية. بنيت لأجل المجتمع.</div>
+      </div>
+    </div>
+  </footer>
+
+  <div class="auth-modal" id="auth-modal">
+    <div class="auth-modal-backdrop"></div>
+    <div class="auth-modal-container">
+      <button class="auth-modal-close" id="auth-modal-close" aria-label="Close" type="button">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+       <div class="auth-modal-icon">
+         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+       </div>
+       <h3 class="auth-modal-title" data-i18n="nav_login">Sign in</h3>
+       <p class="auth-modal-subtitle" data-i18n="auth_modal_subtitle">Sign in with Google to access all features</p>
+
+       <button class="auth-google-btn" data-i18n="nav_signin_google">
+         <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.54 28.59A14.5 14.5 0 0 1 9.5 24c0-1.59.28-3.14.76-4.59l-7.98-6.19A23.99 23.99 0 0 0 0 24c0 3.77.87 7.35 2.56 10.56l7.98-5.97z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 5.97C6.51 42.62 14.62 48 24 48z"/></svg>
+         Sign in with Google
+       </button>
+
+        <div class="auth-divider" data-i18n="auth_secured">مؤمن بواسطة GOOGLE</div>
+       <p class="auth-footer-text" data-i18n="auth_privacy_note">Your email is only used for authentication. No spam, no tracking.</p>
+    </div>
+  </div>
+
+  <div class="auth-modal profile-modal" id="profile-modal">
+    <div class="auth-modal-backdrop"></div>
+    <div class="auth-modal-container">
+      <button class="auth-modal-close" aria-label="Close" type="button">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <div class="profile-modal-tabs" id="profile-modal-tabs">
+        <button class="profile-tab active" data-tab="profile" data-i18n="profile_tab_profile">Profile</button>
+        <button class="profile-tab hidden" data-tab="org" id="profile-org-tab" data-i18n="profile_tab_org">Organization</button>
+      </div>
+      <div class="profile-tab-content active" data-tab="profile">
+        <div class="profile-header">
+          <div class="profile-avatar-wrap">
+            <img class="profile-avatar-img hidden" id="profile-avatar-img" src="" alt="Avatar">
+            <div class="profile-avatar-placeholder" id="profile-avatar-placeholder">U</div>
+            <button class="profile-avatar-overlay" id="profile-avatar-overlay" type="button">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </button>
+            <input type="file" id="profile-avatar-input" accept="image/*" style="display:none">
+          </div>
+          <div class="profile-info">
+            <h4 id="profile-avatar-name">User</h4>
+            <p data-i18n="profile_subtitle">Edit your public profile</p>
+          </div>
+        </div>
+        <div class="profile-field">
+          <label for="profile-name-input" data-i18n="profile_name_label">Display Name</label>
+          <input type="text" id="profile-name-input" placeholder="Your display name" maxlength="50">
+        </div>
+        <div class="profile-field">
+          <label for="profile-username-input" data-i18n="profile_username_label">Username</label>
+          <input type="text" id="profile-username-input" maxlength="30" placeholder="e.g. john_doe" pattern="[a-zA-Z0-9_-]+">
+          <p style="font-size:0.75rem;color:var(--text-muted);margin:4px 0 0">Letters, numbers, underscores and hyphens only</p>
+        </div>
+        <div class="profile-field" id="profile-linked-accounts" style="display:none">
+          <label data-i18n="profile_linked_accounts">Linked Accounts</label>
+          <div id="profile-linked-accounts-list"></div>
+        </div>
+        <div class="profile-field">
+          <label data-i18n="profile_about_label">About</label>
+          <div class="editor-toolbar">
+            <button type="button" data-cmd="bold" title="Bold" data-i18n-title="editor_bold" data-i18n="editor_bold"><strong>B</strong></button>
+            <button type="button" data-cmd="italic" title="Italic" data-i18n-title="editor_italic" data-i18n="editor_italic"><em>I</em></button>
+            <button type="button" data-cmd="underline" title="Underline" data-i18n-title="editor_underline" data-i18n="editor_underline"><u>U</u></button>
+            <button type="button" data-cmd="removeFormat" title="Clear Formatting" data-i18n="editor_clear">&times;</button>
+            <select data-cmd="fontSize">
+              <option value="" data-i18n="common_size">Size</option>
+              <option value="3" data-i18n="common_normal">Normal</option>
+              <option value="4" data-i18n="common_large">Large</option>
+              <option value="5" data-i18n="common_xlarge">X-Large</option>
+              <option value="6" data-i18n="common_xxlarge">XX-Large</option>
+            </select>
+            <button type="button" data-cmd="insertUnorderedList" title="Bullet List" data-i18n="editor_bullet_list">&#x2022;</button>
+            <button type="button" data-cmd="insertOrderedList" title="Numbered List" data-i18n="editor_numbered_list">1.</button>
+          </div>
+          <div class="editor-content" id="profile-about-editor" contenteditable="true" data-placeholder="Write something about yourself..."></div>
+          <div class="profile-char-count" id="profile-char-count">0 / 5000</div>
+        </div>
+        <button class="profile-save-btn" id="profile-save-btn" data-i18n="profile_save">Save Profile</button>
+      </div>
+      <div class="profile-tab-content" data-tab="org" id="profile-org-content">
+        <div class="profile-header">
+          <div class="profile-avatar-wrap">
+            <img class="profile-avatar-img hidden" id="profile-org-avatar-img" src="" alt="Org Avatar">
+            <div class="profile-avatar-placeholder" id="profile-org-avatar-placeholder">O</div>
+            <button class="profile-avatar-overlay" id="profile-org-avatar-overlay" type="button">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </button>
+            <input type="file" id="profile-org-avatar-input" accept="image/*" style="display:none">
+          </div>
+          <div class="profile-info">
+            <h4 id="profile-org-name-display">Organization</h4>
+            <p data-i18n="profile_org_subtitle">Manage your organization profile</p>
+          </div>
+        </div>
+        <div class="profile-field">
+          <label for="profile-org-name-input" data-i18n="dash_orgs_name">Organization Name</label>
+          <input type="text" id="profile-org-name-input" maxlength="60">
+        </div>
+        <div class="profile-field">
+          <label for="profile-org-username-input" data-i18n="profile_org_username_label">Organization Username</label>
+          <input type="text" id="profile-org-username-input" maxlength="30" placeholder="e.g. alexandria-fz">
+          <p class="profile-org-username-warning hidden" id="profile-org-username-warning" style="color:var(--color-danger);font-size:0.8rem;margin:4px 0 0">Warning: This username matches a verified organization</p>
+        </div>
+        <div class="profile-field">
+          <label for="profile-org-about-input" data-i18n="dash_orgs_about">About</label>
+          <textarea id="profile-org-about-input" rows="4" style="width:100%;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-primary);color:var(--text-primary);font-family:inherit;font-size:0.85rem;resize:none;outline:none;box-sizing:border-box"></textarea>
+        </div>
+          <div class="profile-org-members-section" id="profile-org-members-section" style="display:none">
+            <label data-i18n="profile_members">Members</label>
+            <p class="profile-org-members-info" data-i18n="profile_org_members_info">Members can switch to and post as this organization</p>
+            <div class="profile-org-members-list" id="profile-org-members-list"></div>
+            <div class="profile-org-member-add">
+              <select id="profile-org-member-select">
+                <option value="" data-i18n="profile_select_user">Select a user...</option>
+              </select>
+              <button class="profile-org-member-add-btn" id="profile-org-member-add-btn" data-i18n="profile_add_member">Add Member</button>
+            </div>
+          </div>
+        <button class="profile-save-btn" id="profile-org-save-btn" data-i18n="dash_orgs_save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="auth-modal dev-modal" id="dev-modal">
+    <div class="auth-modal-backdrop"></div>
+    <div class="auth-modal-container">
+      <button class="auth-modal-close" aria-label="Close" type="button">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <div class="auth-modal-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      </div>
+      <h3 class="auth-modal-title" data-i18n="dev_title">Developer Access</h3>
+      <p class="auth-modal-subtitle" data-i18n="dev_subtitle">Enter the secret developer key to unlock dashboard access</p>
+      <input type="password" class="dev-key-input" id="dev-key-input" placeholder="Access Key" autocomplete="off">
+      <div class="dev-error" id="dev-error" data-i18n="dev_invalid_key">Invalid key</div>
+      <div class="dev-success" id="dev-success" data-i18n="dev_access_granted">Access granted!</div>
+      <button class="dev-submit-btn" id="dev-submit-btn" data-i18n="dev_verify">Verify Access</button>
+    </div>
+  </div>
+
+  <div class="auth-modal dashboard-modal" id="dashboard-modal">
+    <div class="auth-modal-backdrop"></div>
+    <div class="auth-modal-container">
+      <button class="auth-modal-close" aria-label="Close" type="button">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <h3 class="dashboard-title" data-i18n="dashboard_title">Website Dashboard</h3>
+      <p class="dashboard-subtitle" data-i18n="dashboard_subtitle">Manage users and roles</p>
+      <div class="dashboard-table-wrap">
+        <table class="dashboard-table">
+          <thead>
+            <tr>
+              <th data-i18n="dashboard_col_user">User</th>
+              <th data-i18n="dashboard_col_role">Role</th>
+              <th data-i18n="dashboard_col_joined">Joined</th>
+              <th data-i18n="dashboard_col_actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="dashboard-users-body">
+            <tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text-muted)" data-i18n="dashboard_loading">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="dashboard-empty" id="dashboard-empty" style="display:none" data-i18n="dashboard_empty">No users found</div>
+    </div>
+  </div>
+
+  <script type="module" src="../js/main.js"></script>
+</body>
+</html>
