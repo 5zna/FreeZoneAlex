@@ -1,0 +1,205 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  /* Ultra-Smooth Motion (Apple & Linear quality) */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out-smooth: cubic-bezier(0.65, 0, 0.35, 1);
+  --transition-fast: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow: 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-bounce: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --scale-hover: 1.015;
+  --scale-active: 0.98;
+
+  /* Spacing Grid (Refined 8px base with fluid options) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Refined Radii (Slightly more rounded and premium) */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Precision Typography (Fluid typography scale via clamp) */
+  --font-ar: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-en: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --text-xs: clamp(0.7rem, 0.68rem + 0.1vw, 0.75rem);
+  --text-sm: clamp(0.8rem, 0.78rem + 0.12vw, 0.875rem);
+  --text-base: clamp(0.95rem, 0.93rem + 0.15vw, 1rem);
+  --text-lg: clamp(1.05rem, 1.02rem + 0.2vw, 1.15rem);
+  --text-xl: clamp(1.15rem, 1.1rem + 0.25vw, 1.28rem);
+  --text-2xl: clamp(1.35rem, 1.3rem + 0.35vw, 1.55rem);
+  --text-3xl: clamp(1.8rem, 1.7rem + 0.6vw, 2.2rem);
+  
+  /* Blurs for High-End Devices */
+  --blur-sm: blur(12px);
+  --blur-md: blur(20px);
+  --blur-lg: blur(32px);
+
+  /* Z-index hierarchy */
+  --z-dropdown: 100;
+  --z-sticky: 1000;
+  --z-modal: 2000;
+  --z-overlay: 3000;
+  --z-toast: 5000;
+
+  /* Responsive container widths */
+  --container-max: 1280px;
+  --container-wide: 1440px;
+  --container-ultra: 1680px;
+  --container-cinema: 2200px;
+  --container-pad: clamp(16px, 5vw, var(--space-8));
+}
+
+/* Light Theme (Clean, Warm, Minimalist luxury) */
+:root,
+[data-theme="light"] {
+  --bg-primary: #fafaf9; /* Warm luxury alabaster */
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f5f5f4;
+  
+  /* Glass fallback and saturated states */
+  --bg-glass-fallback: rgba(255, 255, 255, 0.98);
+  --bg-glass: rgba(255, 255, 255, 0.7);
+  --bg-glass-hover: rgba(255, 255, 255, 0.85);
+  
+  --bg-elevated: #ffffff;
+  --bg-inset: #f1f1f0;
+
+  --text-primary: #1c1917; /* Very rich deep charcoal */
+  --text-secondary: #57534e;
+  --text-muted: #78716c; /* Strengthened for readable captions/timestamps */
+  --text-inverse: #ffffff;
+
+  --color-primary: #4f46e5; /* Royal Indigo */
+  --color-primary-hover: #4338ca;
+  --color-primary-light: rgba(79, 70, 229, 0.08);
+  --color-primary-muted: rgba(79, 70, 229, 0.04);
+
+  --color-accent: #0284c7; /* Sky accent */
+  --color-accent-hover: #0369a1;
+  --color-accent-light: rgba(2, 132, 199, 0.08);
+
+  --color-success: #10b981;
+  --color-success-light: rgba(16, 185, 129, 0.08);
+  --color-warning: #f59e0b;
+  --color-warning-light: rgba(245, 158, 11, 0.08);
+  --color-danger: #ef4444;
+  --color-danger-light: rgba(239, 68, 68, 0.08);
+
+  --border-color: rgba(28, 25, 23, 0.06);
+  --border-strong: rgba(28, 25, 23, 0.12);
+  --border-focus: rgba(79, 70, 229, 0.4);
+  --ring-focus: 0 0 0 3px rgba(79, 70, 229, 0.12);
+
+  --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  --gradient-accent: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+  --gradient-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(250, 250, 249, 0.8) 100%);
+  --gradient-border: linear-gradient(135deg, rgba(79, 70, 229, 0.15), rgba(2, 132, 199, 0.1));
+
+  /* Multi-layered shadows (Stripe style) */
+  --shadow-xs: 0 1px 2px rgba(28, 25, 23, 0.02);
+  --shadow-sm: 0 2px 4px rgba(28, 25, 23, 0.03), 0 1px 2px rgba(28, 25, 23, 0.02);
+  --shadow-md: 0 4px 10px rgba(28, 25, 23, 0.04), 0 2px 4px rgba(28, 25, 23, 0.03);
+  --shadow-lg: 0 10px 25px rgba(28, 25, 23, 0.05), 0 3px 10px rgba(28, 25, 23, 0.03);
+  --shadow-xl: 0 20px 40px rgba(28, 25, 23, 0.08), 0 1px 3px rgba(28, 25, 23, 0.02);
+  --shadow-glow: 0 0 20px rgba(79, 70, 229, 0.08);
+  --shadow-inner: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --shadow-card: 0 4px 16px rgba(28, 25, 23, 0.05), 0 1px 3px rgba(28, 25, 23, 0.04);
+
+  --badge-admin-bg: rgba(37, 99, 235, 0.08);
+  --badge-admin-text: #2563eb;
+  --badge-mod-bg: rgba(217, 119, 6, 0.08);
+  --badge-mod-text: #d97706;
+  --badge-dev-bg: rgba(8, 145, 178, 0.08);
+  --badge-dev-text: #0891b2;
+  --badge-owner-bg: linear-gradient(135deg, #f59e0b, #ef4444);
+  --badge-owner-text: #ffffff;
+
+  --bg-mesh:
+    radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.05) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(2, 132, 199, 0.04) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(124, 58, 237, 0.03) 0px, transparent 60%);
+}
+
+/* Dark Theme (Deep Obsidian & Velvet luxury) */
+[data-theme="dark"] {
+  --bg-primary: #050505; /* Deep luxury obsidian */
+  --bg-secondary: #0a0a0c;
+  --bg-tertiary: #111115;
+  
+  --bg-glass-fallback: rgba(10, 10, 12, 0.98);
+  --bg-glass: rgba(10, 10, 12, 0.65);
+  --bg-glass-hover: rgba(17, 17, 21, 0.8);
+  
+  --bg-elevated: #0f0f13;
+  --bg-inset: #030303;
+
+  --text-primary: #fafaf9;
+  --text-secondary: #a8a29e;
+  --text-muted: #8a857f; /* Strengthened for readable captions/timestamps */
+  --text-inverse: #000000;
+
+  /* Neon-glowing coordinates */
+  --color-primary: #6366f1;
+  --color-primary-hover: #818cf8;
+  --color-primary-light: rgba(99, 102, 241, 0.15);
+  --color-primary-muted: rgba(99, 102, 241, 0.06);
+
+  --color-accent: #38bdf8;
+  --color-accent-hover: #7dd3fc;
+  --color-accent-light: rgba(56, 189, 248, 0.15);
+
+  --color-success: #34d399;
+  --color-success-light: rgba(52, 211, 153, 0.12);
+  --color-warning: #fbbf24;
+  --color-warning-light: rgba(251, 191, 36, 0.12);
+  --color-danger: #f87171;
+  --color-danger-light: rgba(248, 113, 113, 0.12);
+
+  --border-color: rgba(255, 255, 255, 0.05);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --border-focus: rgba(99, 102, 241, 0.5);
+  --ring-focus: 0 0 0 3px rgba(99, 102, 241, 0.2);
+
+  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  --gradient-accent: linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%);
+  --gradient-surface: linear-gradient(180deg, rgba(15, 15, 19, 0.97) 0%, rgba(10, 10, 12, 0.9) 100%);
+  --gradient-border: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(56, 189, 248, 0.15));
+
+  /* Custom dark shadows */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.6);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.7);
+  --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.8);
+  --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.85);
+  --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.9);
+  --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.15);
+  --shadow-inner: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.5);
+
+  --badge-admin-bg: rgba(59, 130, 246, 0.12);
+  --badge-admin-text: #93c5fd;
+  --badge-mod-bg: rgba(251, 191, 36, 0.12);
+  --badge-mod-text: #fcd34d;
+  --badge-dev-bg: rgba(34, 211, 238, 0.12);
+  --badge-dev-text: #67e8f9;
+  --badge-owner-bg: linear-gradient(135deg, #f59e0b, #ef4444);
+  --badge-owner-text: #ffffff;
+
+  --bg-mesh:
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(56, 189, 248, 0.08) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(139, 92, 246, 0.06) 0px, transparent 60%);
+}
