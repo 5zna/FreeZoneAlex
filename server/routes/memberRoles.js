@@ -74,11 +74,12 @@ router.put('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
     // Update user base role if this is a system rank
     // Handle @owner special prefix case
     let actualRole = roleName;
-    if (roleName === '@owner') actualRole = 'owner';
+    if (roleName.startsWith('@')) actualRole = roleName.substring(1);
     
     const systemRanks = ['owner', 'admin', 'moderator', 'developer'];
     if (systemRanks.includes(actualRole)) {
-      await User.findByIdAndUpdate(req.params.userId, { role: actualRole }, { new: true }).exec();
+      const updatedUser = await User.findByIdAndUpdate(req.params.userId, { role: actualRole }, { new: true }).exec();
+      console.log(`✅ Updated user ${req.params.userId} role to: ${updatedUser.role}`);
     }
     
     await createAuditLog({ category: 'staff', type: 'member_role_add', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Added member role', targetType: 'member-role', targetId: String(req.params.userId), details: roleName });
@@ -93,11 +94,12 @@ router.put('/member-roles/:userId', auth, requireAdmin, async (req, res) => {
     // Update user base role if this is a system rank
     // Handle @owner special prefix case
     let actualRole = roleName;
-    if (roleName === '@owner') actualRole = 'owner';
+    if (roleName.startsWith('@')) actualRole = roleName.substring(1);
     
     const systemRanks = ['owner', 'admin', 'moderator', 'developer'];
     if (systemRanks.includes(actualRole)) {
-      await User.findByIdAndUpdate(req.params.userId, { role: actualRole }, { new: true }).exec();
+      const updatedUser = await User.findByIdAndUpdate(req.params.userId, { role: actualRole }, { new: true }).exec();
+      console.log(`✅ Updated user ${req.params.userId} role to: ${updatedUser.role}`);
     }
     
     await createAuditLog({ category: 'staff', type: 'member_role_add', actionType: 'role', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Added member role', targetType: 'member-role', targetId: String(req.params.userId), details: roleName });
