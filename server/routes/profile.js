@@ -69,8 +69,9 @@ router.post('/profile/avatar', auth, (req, res) => {
     }
 
     try {
-      const avatarUrl = `/uploads/${req.file.filename}`;
-      const user = await User.findByIdAndUpdate(req.userId, { avatar: avatarUrl }, { new: true });
+      var base64 = req.file.buffer.toString('base64');
+      var dataUrl = 'data:' + req.file.mimetype + ';base64,' + base64;
+      var user = await User.findByIdAndUpdate(req.userId, { avatar: dataUrl }, { new: true });
       await createAuditLog({ category: 'activity', type: 'profile_avatar', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Changed profile avatar', targetType: 'profile', targetId: String(req.userId), targetName: user?.displayName || user?.name || '' });
       res.json({ user });
     } catch {

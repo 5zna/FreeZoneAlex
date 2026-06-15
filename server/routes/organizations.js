@@ -6,6 +6,7 @@ import auth from '../middleware/auth.js';
 import { createNotification } from './notifications.js';
 import { containsProfanity } from '../utils/profanityFilter.js';
 import { createAuditLog, actorSnapshot } from '../utils/auditLog.js';
+import { uploadAvatar } from '../middleware/upload.js';
 
 const router = Router();
 
@@ -134,6 +135,32 @@ router.put('/organizations/:id', auth, async (req, res) => {
   } catch {
     res.status(500).json({ message: 'Server error' });
   }
+});
+
+/* Upload avatar for an organization */
+router.post('/organizations/:id/avatar', auth, async (req, res) => {
+  uploadAvatar(req, res, async (err) => {
+    if (err) return res.status(400).json({ message: err.message || 'Upload failed' });
+    if (!req.file) return res.status(400).json({ message: 'No file provided' });
+    try {
+      var org = await Organization.findById(req.params.id);
+      if (!org) return res.status(404).json({ message: 'Not found' });
+      if (org.owner.toString() !== req.userId && !isAdmin(req)) {
+        return res.status(403).json({ message: 'Only the owner or an admin can change the avatar' });
+      }
+      var base64 = req.file.buffer.toString('base64');
+      var dataUrl = 'data:' + req.file.mimetype + ';base64,' + base64;
+      org = await Organization.findByIdAndUpdate(
+        req.params.id,
+        { avatar: dataUrl },
+        { new: true }
+      ).populate('owner', 'name displayName email');
+      await createAuditLog({ category: 'staff', type: 'organization_avatar', actionType: 'organization', actorId: req.user._id, actorName: actorSnapshot(req.user).actorName, actorRole: req.user.role, message: 'Updated organization avatar', targetType: 'organization', targetId: String(org._id), targetName: org.name });
+      res.json({ organization: org });
+    } catch {
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
 });
 
 router.delete('/organizations/:id', auth, async (req, res) => {
