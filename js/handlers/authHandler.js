@@ -193,7 +193,7 @@ export function checkSiteAlert() {
       if (_alertBar) return;
       _alertBar = document.createElement('div');
       _alertBar.id = 'site-alert-bar';
-      _alertBar.style.cssText = 'position:sticky;top:0;left:0;right:0;z-index:9999;padding:10px 16px;background:#dc2626;color:#fff;text-align:center;font-size:0.85rem;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;width:100%';
+      _alertBar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;padding:10px 16px;background:#dc2626;color:#fff;text-align:center;font-size:0.85rem;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;width:100%';
       _alertBar.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg><span style="flex:1">' + alertText + '</span><button type="button" style="background:transparent;border:none;color:#fff;font-size:1.2rem;cursor:pointer;padding:0 4px;line-height:1" id="site-alert-dismiss">&times;</button>';
       document.body.insertBefore(_alertBar, document.body.firstChild);
       document.getElementById('site-alert-dismiss').addEventListener('click', function() { _alertBar.remove(); _alertBar = null; });
