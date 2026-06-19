@@ -204,6 +204,8 @@ app.get('/about', (req, res) => res.sendFile(join(pages, 'about.html')));
 app.get('/contributors', (req, res) => res.sendFile(join(pages, 'contributors.html')));
 app.get('/social', (req, res) => res.sendFile(join(pages, 'social.html')));
 
+app.get('/apply', (req, res) => res.redirect(301, 'https://forms.gle/VwASz9k24ry5Bptb6'));
+
 /* Serve legacy verified.svg requests (cached old code uses /verified.svg) */
 app.get('/verified.svg', (req, res) => { res.sendFile(join(__dirname, '..', 'assets', 'icons', 'verified.svg')); });
 
