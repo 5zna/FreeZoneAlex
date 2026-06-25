@@ -49,7 +49,7 @@ export function showToast(msg) {
   t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(function(){t.classList.remove('show')}, 3000);
 }
 
-var CONTACT_EMAIL = 'admin@freezone.com';
+var CONTACT_EMAIL = 'support@freezonealex.xyz';
 
 function showStatusModal(title, message, isWarning) {
   var existing = document.getElementById('status-modal');
