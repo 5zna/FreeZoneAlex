@@ -572,8 +572,8 @@ export const ar = {
   "social_page_desc": "تابع المنطقة الحرة على وسائل التواصل وانضم إلى المجتمع.",
   "social_facebook_group": "جروب الفيسبوك",
   "social_facebook_group_desc": "انضم إلى جروبنا الرئيسي على فيسبوك الذي يضم أكثر من 20 ألف عضو.",
-  "social_facebook_page": "قريبا",
-  "social_facebook_page_desc": "صفحة المنقطة الحرة قادمة قريبا.",
+  "social_facebook_page": "فيسبوك",
+  "social_facebook_page_desc": "صفحة المنقطة الحرة على الفيسبوك.",
   "error_404_title": "الصفحة غير موجودة",
   "error_404_desc": "عذراً، الصفحة التي تبحث عنها غير موجودة أو تم نقلها.",
   "error_404_back": "← العودة للرئيسية"
